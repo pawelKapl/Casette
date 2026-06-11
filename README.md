@@ -33,7 +33,7 @@
 - services to run on startup:
 
 JACKD server (jackd.server):
-
+```
 [Unit]
 Description=JACK Audio Server
 Requires=sound.target
@@ -46,9 +46,9 @@ Environment=JACK_NO_AUDIO_RESERVATION=1
 
 [Install]
 WantedBy=multi-user.target
-
+```
 Casette (casette.service):
-
+```
 [Unit]
 Description=Casette
 Requires=jackd.service
@@ -64,15 +64,17 @@ Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
+```
 
 - cmdline.txt should be:
-
+```
 root=PARTUUID=<keep yours here> rootfstype=ext4 rootwait net.ifnames=0 logo.nologo console=null consoleblank=0 quiet splash vt.global_cursor_default=0
-
-- config.txt should additionaly have:
-
+```
+- config.txt should additionaly contain:
+```
 dtoverlay=piscreen,drm
 dtoverlay=hifiberry-dacplusadcpro
+```
 
 <img width="1080" height="1440" alt="image" src="https://github.com/user-attachments/assets/9690719d-2d70-4bbf-8748-a4a78e6fa292" />
 
