@@ -153,7 +153,7 @@ void FxChain::adjustModParam(int param, int newValue)
 			_mod->setFeedback(float(_modulatorSettings.feedback) / 100.);
 			break;
 		case 6:
-			_mod->setFeedback(_modulatorSettings.vibratoMode);
+			_mod->setVibratoMode(_modulatorSettings.vibratoMode);
 			break;
 	}
 

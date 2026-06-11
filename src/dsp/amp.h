@@ -113,7 +113,7 @@ public:
     }
 
 private:
-    std::atomic<bool> _enabled{true};
+    std::atomic<bool> _enabled{false};
     float _modelLoudnessDb = -18.0f;
     WaveNetNAMModel *_model = nullptr;
     CabSimulator *_cab = nullptr;

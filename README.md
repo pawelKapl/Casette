@@ -27,10 +27,52 @@
 
 ## Raspberry config:
 - u need some lightweight OS distro - i used DietPi
+- enable i2c, spi and uart
 - u need to create JACK Audio Server on your RPi (jackd), and configure your sound card 
 - for UI i used LVGL framework with framebuffers
-- generally there is a lot of config to make it work nice, boot fast, i will keep adding those hints here...
+- services to run on startup:
 
+JACKD server (jackd.server):
+
+[Unit]
+Description=JACK Audio Server
+Requires=sound.target
+After=sound.target
+
+[Service]
+ExecStart=/usr/bin/jackd -P10 -d alsa -d hw:0 -r 48000 -p 64 -n 2 -i 2 -o 2
+Restart=on-failure
+Environment=JACK_NO_AUDIO_RESERVATION=1
+
+[Install]
+WantedBy=multi-user.target
+
+Casette (casette.service):
+
+[Unit]
+Description=Casette
+Requires=jackd.service
+Conflicts=getty@tty1.service
+
+[Service]
+TTYPath=/dev/tty1
+StandardOutput=journal
+StandardError=journal
+ExecStart=/root/Casette/build/Casette
+WorkingDirectory=/root/Casette/build
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
+- cmdline.txt should be:
+
+root=PARTUUID=<keep yours here> rootfstype=ext4 rootwait net.ifnames=0 logo.nologo console=null consoleblank=0 quiet splash vt.global_cursor_default=0
+
+- config.txt should additionaly have:
+
+dtoverlay=piscreen,drm
+dtoverlay=hifiberry-dacplusadcpro
 
 <img width="1080" height="1440" alt="image" src="https://github.com/user-attachments/assets/9690719d-2d70-4bbf-8748-a4a78e6fa292" />
 

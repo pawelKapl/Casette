@@ -35,11 +35,11 @@ void Modulator::process(const t_float *const *input, t_float **output, int frame
         }
         else
         {
-            auto compensation = 1.0f + 0.5f * _modMix;
-            output[0][i] = (1.0f - _modMix) * input[0][i] + _modMix * outL;
-            output[0][i] *= compensation;
-            output[1][i] = (1.0f - _modMix) * input[0][i] + _modMix * outR;
-            output[1][i] *= compensation;
+            float dryGain = std::sqrt(1.0f - _modMix);
+            float wetGain = std::sqrt(_modMix);
+
+            output[0][i] = dryGain * input[0][i] + wetGain * outL;
+            output[1][i] = dryGain * input[0][i] + wetGain * outR;
         }
 
         _feedbackSampleL = outL;

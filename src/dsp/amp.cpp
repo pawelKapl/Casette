@@ -13,7 +13,6 @@ Amp::~Amp()
 
 void Amp::reload()
 {
-    bool enabledCurrently = _enabled;
     _enabled = false;
 
     if (_model == nullptr)
@@ -26,7 +25,6 @@ void Amp::reload()
     }
 
     loadModel(_settings.model);
-    _enabled = _settings.ampEnabled;
 
     // Tonestack
     BiQuadFilterParams bassParams{};
@@ -59,7 +57,7 @@ void Amp::reload()
     _mvGainAmp = pow(10.0f, _settings.masterVolumeGain / 20.0f);
     _inputGainAmp = pow(10.0f, _settings.inputGain / 20.0f);
 
-    _enabled = enabledCurrently;
+    _enabled = _settings.ampEnabled;
 }
 
 void Amp::loadModel(const std::string &name)
