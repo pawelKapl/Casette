@@ -12,6 +12,18 @@
 - Presets handling
 - Tuner
 
+## Features
+- Neural amp modeller amp simulation unit with full tonectack
+- IR loader for cab simulation
+- Noise Gate
+- Delays: Mono, Tape, Dual Tap, Ping Pong, Circular, reverse (coming)
+- Reverbs: room
+- Modulator - with vibrato mode
+- Cpu usage monitor
+- Tuner
+- Bypass
+- Presets & memory
+
 ## BOM:
 - Raspberry PI 4 or higher
 - HiFiBerry DAC2 ADC Pro sound card
