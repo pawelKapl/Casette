@@ -5,7 +5,7 @@
 - Touchscreen
 - Usb powered
 - DietPi RPi OS
-- based on NAM captures: https://www.neuralampmodeler.com/
+- based on NAM captures: https://www.neuralampmodeler.com/ and lightweight NeuralAudio library for progessing those: https://github.com/mikeoliphant/NeuralAudio
 - IR loader
 - Time based effects
 - Noise gate
