@@ -67,8 +67,8 @@ void Delay::process(const t_float* const* input, t_float** output, int frames, i
     singleDelay(input, output, PING_PONG, frames, 1, 1, inChannels, outChannels);
     break;
   case DUAL_TAP:
-    singleDelay(input, output, DUAL_TAP, frames, 0, -1, inChannels, outChannels);
-    singleDelay(input, output, DUAL_TAP, frames, 1, 1, inChannels, outChannels);
+    singleDelay(input, output, DUAL_TAP, frames, 0, 0, inChannels, outChannels);
+    singleDelay(input, output, DUAL_TAP, frames, 1, 0, inChannels, outChannels);
     break;
   case MONO:
   case TAPE:
@@ -105,9 +105,6 @@ void Delay::singleDelay(const t_float* const* input, t_float** output, DelayMode
     else
       inputSample = input[0][i];
 
-    delay->hiPassFilter.filter(inputSample, &inputSample);
-    delay->lowPassFilter.filter(inputSample, &inputSample);
-
     t_float readHead = (t_float)delay->writeHead - delay->bufferLength;
 
     if (_modDepth)
@@ -131,9 +128,18 @@ void Delay::singleDelay(const t_float* const* input, t_float** output, DelayMode
 
     t_float delayedSample = (1.0 - frac) * delay->buffer[indexA] + frac * delay->buffer[indexB];
 
-    t_float writeSample = inputSample + delayedSample * delay->feedbackLevel;
+    t_float feedbackSample = delayedSample;
+
+    delay->hiPassFilter.filter(feedbackSample, &feedbackSample);
+    delay->lowPassFilter.filter(feedbackSample, &feedbackSample);
+
+    t_float writeSample =
+        inputSample +
+        feedbackSample * delay->feedbackLevel;
+
     if (_mode == TAPE)
-      writeSample = fast_tanh(writeSample);
+        writeSample = fast_tanh(writeSample);
+
     delay->buffer[delay->writeHead] = writeSample;
 
     delay->writeHead = (delay->writeHead + 1) % BUFFER_SIZE;
@@ -183,7 +189,7 @@ void Delay::recalculate()
   _dualTapDelays[0].feedbackLevel = _feedbackLvl;
 
   _dualTapDelays[1].bufferLength = _baseTime2 * _samplingFrequency;
-  _dualTapDelays[0].feedbackLevel = _feedbackLvl;
+  _dualTapDelays[1].feedbackLevel = _feedbackLvl;
 
   _generalDelay[0].bufferLength = _baseTime * _samplingFrequency;
   _generalDelay[0].feedbackLevel = _feedbackLvl;

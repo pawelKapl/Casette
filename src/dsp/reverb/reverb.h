@@ -103,8 +103,8 @@ public:
 
   inline void setDamping(t_float damping)
   {
-    _roomReverbL.setDamping(damping);
-    _roomReverbR.setDamping(damping);
+    _roomReverb[0].setDamping(damping);
+    _roomReverb[1].setDamping(damping);
   }
 
   inline void setMix(t_float mix)
@@ -119,14 +119,14 @@ public:
 
   inline void setPreDelay(float preDelay)
   {
-    _roomReverbL.setPreDelay(preDelay, _samplingFrequency);
-    _roomReverbR.setPreDelay(preDelay, _samplingFrequency);
+    _roomReverb[0].setPreDelay(preDelay, _samplingFrequency);
+    _roomReverb[1].setPreDelay(preDelay, _samplingFrequency);
   }
 
   inline void setRoomSize(float size)
   {
-    _roomReverbL.setRoomSize(size, _samplingFrequency);
-    _roomReverbR.setRoomSize(size, _samplingFrequency);
+    _roomReverb[0].setRoomSize(size, _samplingFrequency);
+    _roomReverb[1].setRoomSize(size, _samplingFrequency);
   }
 
 private:
@@ -135,9 +135,8 @@ private:
   ReverbMode _mode = ROOM;
   t_float _reverbMix = 0.36f;
 
-  RoomReverb _roomReverbL;
-  RoomReverb _roomReverbR;
+  RoomReverb _roomReverb[2];
 
-  HighPassIOrder _hiPassFilter;
-  LowPassIOrder _lowPassFilter;
+  HighPassIOrder _hiPassFilter[2];
+  LowPassIOrder _lowPassFilter[2];
 };
