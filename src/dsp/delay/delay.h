@@ -82,7 +82,8 @@ public:
     _diffusion = diffusion;
     _diffuserL.setGain(diffusion);
     _diffuserR.setGain(diffusion);
-    _diffuserC.setGain(diffusion);
+    _diffuserC1.setGain(diffusion);
+    _diffuserC2.setGain(diffusion);
   }
 
 private:
@@ -107,7 +108,8 @@ private:
 
   Diffuser _diffuserL;
   Diffuser _diffuserR;
-  Diffuser _diffuserC;
+  Diffuser _diffuserC1;
+  Diffuser _diffuserC2;
 
   LFO _lfoWow;
   LFO _lfoFlutter;

@@ -20,7 +20,8 @@ t_float *Delay::init(t_float *memory)
 
   currentPtr = _diffuserL.init(currentPtr, _samplingFrequency);
   currentPtr = _diffuserR.init(currentPtr, _samplingFrequency);
-  currentPtr = _diffuserC.init(currentPtr, _samplingFrequency);
+  currentPtr = _diffuserC1.init(currentPtr, _samplingFrequency);
+  currentPtr = _diffuserC2.init(currentPtr, _samplingFrequency);
 
   clear();
 
@@ -79,6 +80,7 @@ void Delay::process(const t_float* const* input, t_float** output, int frames, i
 
 void Delay::singleDelay(const t_float* const* input, t_float** output, DelayMode mode, int frames, int delayIndex, int panning, int inChannels, int outChannels)
 {
+  static bool firstTap = false;
   SingleDelay* delay;
   switch (_mode)
   {
@@ -87,6 +89,7 @@ void Delay::singleDelay(const t_float* const* input, t_float** output, DelayMode
     break;
   case DUAL_TAP:
     delay = &_dualTapDelays[delayIndex];
+    firstTap = !firstTap;
     break;
   case MONO:
   case TAPE:
@@ -160,7 +163,15 @@ void Delay::singleDelay(const t_float* const* input, t_float** output, DelayMode
     }
     else if (panning == 0)
     {
-      if (_diffusion) _diffuserC.process(lOut, lOut);
+      if (mode == DUAL_TAP && _diffusion)
+      {
+        firstTap ? _diffuserC1.process(lOut, lOut) : _diffuserC2.process(lOut, lOut);
+      }
+      else
+      {
+        if (_diffusion) _diffuserC1.process(lOut, lOut);
+      }
+
       t_float modifier = outChannels > 1 ? 0.95f : 1.0f;
       output[0][i] += lOut * modifier;
       if (outChannels > 1) output[1][i] += lOut * modifier;
