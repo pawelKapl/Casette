@@ -65,6 +65,18 @@ static void update_slider_value_mhz(lv_event_t * e)
     lv_obj_align_to(label, parent, LV_ALIGN_CENTER, 0, 0);
 }
 
+static void resize_back_button(lv_obj_t *menu)
+{
+    lv_obj_t * btn  = lv_menu_get_main_header_back_button(menu);
+    lv_obj_t * icon = lv_obj_get_child_by_type(btn, 0, &lv_image_class);
+
+    /* Use a larger font */
+    lv_obj_set_style_text_font(icon, &lv_font_montserrat_30, 0);
+
+    lv_obj_set_width(btn, 48);
+    lv_obj_set_height(btn, 48);
+}
+
 static float positionToDb(float position, float minDb = -50.0f, float maxDb = 40.0f)
 {
     float dB;

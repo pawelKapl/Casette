@@ -35,6 +35,7 @@ void NGTab::createLayout()
     lv_obj_add_event_cb(menu, backEventHandler, LV_EVENT_CLICKED, menu);
     lv_obj_set_size(menu, lv_display_get_horizontal_resolution(NULL) - 80, lv_display_get_vertical_resolution(NULL));
     lv_obj_center(menu);
+    resize_back_button(menu);
 
     lv_obj_t * cont;
     lv_obj_t * section;

@@ -45,6 +45,7 @@ void ModTab::createLayout()
     lv_obj_add_event_cb(menu, backEventHandler, LV_EVENT_CLICKED, menu);
     lv_obj_set_size(menu, lv_display_get_horizontal_resolution(NULL) - 80, lv_display_get_vertical_resolution(NULL));
     lv_obj_center(menu);
+    resize_back_button(menu);
 
     lv_obj_t * cont;
     lv_obj_t * section;
@@ -86,11 +87,12 @@ void ModTab::createLayout()
     section = lv_menu_section_create(root_page);
     cont = create_switch(section, LV_SYMBOL_POWER, "Enabled", modSettings->enabled);
     lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onModButtonPowerClicked, LV_EVENT_VALUE_CHANGED, this);
-    cont = create_switch(section, LV_SYMBOL_SHUFFLE, "Vibrato", modSettings->vibratoMode);
-    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onVibratoButtonClicked, LV_EVENT_VALUE_CHANGED, this);
-
+    
     cont = create_text(section, LV_SYMBOL_AUDIO, "Params", LV_MENU_ITEM_BUILDER_VARIANT_1);
     lv_menu_set_load_page_event(menu, cont, sub_params_page);
+
+    cont = create_switch(section, LV_SYMBOL_SHUFFLE, "Vibrato", modSettings->vibratoMode);
+    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onVibratoButtonClicked, LV_EVENT_VALUE_CHANGED, this);
 
     lv_menu_set_sidebar_page(menu, NULL);
     lv_menu_set_page(menu, root_page);
