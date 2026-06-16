@@ -221,7 +221,7 @@ static void onAmpModelPicked(lv_event_t *e)
     lv_obj_t *obj = lv_event_get_target_obj(e);
     if (code == LV_EVENT_VALUE_CHANGED)
     {
-        char buf[32];
+        char buf[64];
         lv_dropdown_get_selected_str(obj, buf, sizeof(buf));
         auto *self = static_cast<AmpTab *>(lv_event_get_user_data(e));
         self->changeAmpModel(buf);

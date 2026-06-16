@@ -119,8 +119,6 @@ int setup()
     std::signal(SIGINT, signalHandler);
     log_info << "Start!";
 
-    gui.init();
-
     if (client.init(audio_callback))
         return -1;
 
@@ -144,6 +142,9 @@ int setup()
                                            { State::get().changePreset(State::get().rightFsAssignement); Storage::get().persistActivePreset(); });
     footswitches[2]->setLongPressCallback([&]()
                                           { bypass = !bypass; gui.bypassMode(bypass); });
+
+    amp.reload();
+    gui.init();
 
     return 0;
 }

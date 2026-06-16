@@ -1,10 +1,8 @@
 #include "amp.h"
 #include "json.hpp"
+#include <list>
 
-Amp::Amp(CabSimulator *cab) : _cab(cab)
-{
-    reload();
-}
+Amp::Amp(CabSimulator *cab) : _cab(cab) {}
 
 Amp::~Amp()
 {
@@ -16,7 +14,7 @@ void Amp::reload()
     _enabled = false;
 
     if (_model == nullptr)
-        _model = new WaveNetNAMModel;
+        _model = new NeuralAudio::NeuralModel;
 
     auto persistedSettings = Storage::get().read<AmpSettings>("amp");
     if (persistedSettings.has_value())
@@ -65,23 +63,22 @@ void Amp::loadModel(const std::string &name)
     bool currentlyEnabled = _enabled;
     _enabled = false;
 
+    if (_model == nullptr)
+        _model = new NeuralAudio::NeuralModel;
+
     const auto modelPath{std::string{"../models/"} + name + ".nam"};
-    nlohmann::json model_json{};
-    std::string out;
-    std::ifstream{modelPath, std::ifstream::binary} >> out;
-    std::ifstream{modelPath, std::ifstream::binary} >> model_json;
+    log_info << "Loading amp model from: " + modelPath; 
 
-    _modelLoudnessDb = 0.0f;
-    if (model_json.contains("metadata") && model_json.at("metadata").contains("loudness"))
-    {
-        float loudness = model_json["metadata"]["loudness"];
-        _modelLoudnessDb += -18.0f - loudness;
-    }
+    NeuralAudio::NeuralModelLoader loader;
+    _model = loader.CreateFromFile(modelPath);
 
-    _modelLoudnessAmp = pow(10.0f, _modelLoudnessDb / 20.0f);
+    log_info << "Amp loaded with model: " << _model->GetLoadMode();
 
-    _model->SetWeights(model_json.at("weights"));
-    _model->Prewarm();
+    _inputCorrection = pow(10.0f, _model->GetRecommendedInputDBAdjustment() / 20.0f);
+    _outputCorrection = pow(10.0f, _model->GetRecommendedOutputDBAdjustment() / 20.0f);
+
+    log_info << "Input Correction: " << _model->GetRecommendedInputDBAdjustment() << "db, factor: " << _inputCorrection;
+    log_info << "Output Correction: " << _model->GetRecommendedOutputDBAdjustment() << "db, factor: " << _outputCorrection;
 
     _settings.model = name;
 
@@ -99,7 +96,7 @@ void Amp::process(const float *input, float *output, const size_t numFrames)
     // apply input gain
     for (int i = 0; i < numFrames; i++)
     {
-        output[i] = input[i] * _inputGainAmp;
+        output[i] = input[i] * _inputGainAmp * _inputCorrection;
         if (std::abs(output[i]) > inMax)
             inMax = std::abs(output[i]);
     }
@@ -129,7 +126,7 @@ void Amp::process(const float *input, float *output, const size_t numFrames)
     // apply output gain
     for (int i = 0; i < numFrames; i++)
     {
-        output[i] = output[i] * _modelLoudnessAmp * _mvGainAmp;
+        output[i] = output[i] * _outputCorrection * _mvGainAmp;
         if (std::abs(output[i]) > outMax)
             outMax = std::abs(output[i]);
     }

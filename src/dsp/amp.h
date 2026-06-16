@@ -1,15 +1,10 @@
 #pragma once
 
 #include "env.h"
-#include "wavenet/wave_net.h"
 #include "dsp/IIR_filter.h"
 #include "cab_simulator.h"
 #include "storage.h"
-
-using IStdDilations = NeuralAudio::Dilations<1, 2, 4, 8, 16, 32, 64, 128, 256, 512>;
-using WaveNetNAMModel = typename NeuralAudio::WaveNetModelT<
-    NeuralAudio::WaveNetLayerArrayT<1, 1, 8, 16, 3, IStdDilations, false>,
-    NeuralAudio::WaveNetLayerArrayT<16, 1, 1, 8, 3, IStdDilations, true>>;
+#include "NeuralModel.h"
 
 struct AmpSettings
 {
@@ -114,11 +109,11 @@ public:
 
 private:
     std::atomic<bool> _enabled{false};
-    float _modelLoudnessDb = -18.0f;
-    WaveNetNAMModel *_model = nullptr;
+    NeuralAudio::NeuralModel *_model = nullptr;
     CabSimulator *_cab = nullptr;
-
-    float _modelLoudnessAmp;
+    
+    float _inputCorrection;
+    float _outputCorrection;
     float _mvGainAmp;
     float _inputGainAmp;
 
