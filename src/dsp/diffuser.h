@@ -2,6 +2,7 @@
 
 #include "dsp_math.h"
 #include "lfo.h"
+#include "algorithm"
 
 #define BUFFER_OVERLAP 15
 
@@ -9,7 +10,7 @@ class AllPass
 {
 public:
   AllPass() = default;
-  AllPass(t_float aFactor, int delayLength, int samplingFrequency, t_float *bufferMemory)
+  AllPass(t_float aFactor, int delayLength)
     : _a(aFactor),
     _delay(delayLength),
     _buffer(delayLength + BUFFER_OVERLAP)
@@ -21,7 +22,7 @@ public:
   inline t_float process(t_float input, int offset)
   {
     int bufferSize = _delay + BUFFER_OVERLAP;
-    int modDelay = _delay + offset;
+    int modDelay = std::clamp(_delay + offset, 1, _delay + BUFFER_OVERLAP - 1);
 
     _index = (_index + 1) % bufferSize;
     int readIndex = (_index - modDelay + bufferSize) % bufferSize;
@@ -47,21 +48,14 @@ private:
 class Diffuser
 {
 public:
-  t_float* init(t_float *memory, int samplingFrequency)
+  void init(int samplingFrequency)
   {
-    t_float *memoryPtr = memory;
-    _filters[0] = std::make_unique<AllPass>(0.7, 179, samplingFrequency, memoryPtr);
-    memoryPtr += (179 + BUFFER_OVERLAP);
-    _filters[1] = std::make_unique<AllPass>(0.7, 269, samplingFrequency, memoryPtr);
-    memoryPtr += (269 + BUFFER_OVERLAP);
-    _filters[2] = std::make_unique<AllPass>(0.7, 419, samplingFrequency, memoryPtr);
-    memoryPtr += (419 + BUFFER_OVERLAP);
-    _filters[3] = std::make_unique<AllPass>(0.7, 631, samplingFrequency, memoryPtr);
-    memoryPtr += (631 + BUFFER_OVERLAP);
+    _filters[0] = std::make_unique<AllPass>(0.75, 179);
+    _filters[1] = std::make_unique<AllPass>(0.72, 269);
+    _filters[2] = std::make_unique<AllPass>(0.68, 419);
+    _filters[3] = std::make_unique<AllPass>(0.64, 631);
 
     _lfo = std::make_unique<LFO>(0.1f, samplingFrequency, 4);
-
-    return memoryPtr;
   }
 
   void setGain(t_float diffusion)
@@ -75,8 +69,10 @@ public:
     _lfo->tick();
     int offset = _lfo->getOffset();
     t_float processed = input;
-    for (int i = 0; i < 4; i++)
-      processed = _filters[i]->process(processed, offset);
+    processed = _filters[0]->process(processed, offset);
+    processed = _filters[1]->process(processed, -offset);
+    processed = _filters[2]->process(processed, offset / 2);
+    processed = _filters[3]->process(processed, -offset / 2);
 
     output = processed;
   }

@@ -29,7 +29,7 @@ struct RoomReverb
     t_float *currentPtr = ptr;
     buffer = currentPtr;
     currentPtr += PRE_DELAY_BUFFER_SIZE;
-    currentPtr = diffuser.init(currentPtr, samplingFrequency);
+    diffuser.init(samplingFrequency);
 
     diffuser.setGain(0.8f);
     lfo = {0.5, samplingFrequency, 1, 0.1};

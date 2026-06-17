@@ -1,4 +1,5 @@
 #include "delay.h"
+#include <algorithm>
 
 Delay::Delay(int samplingFrequency)
   : _samplingFrequency(samplingFrequency), 
@@ -18,10 +19,10 @@ t_float *Delay::init(t_float *memory)
   for (int i = 0; i < 1; i++)
     currentPtr = initSingleDelay(&_generalDelay[i], currentPtr);
 
-  currentPtr = _diffuserL.init(currentPtr, _samplingFrequency);
-  currentPtr = _diffuserR.init(currentPtr, _samplingFrequency);
-  currentPtr = _diffuserC1.init(currentPtr, _samplingFrequency);
-  currentPtr = _diffuserC2.init(currentPtr, _samplingFrequency);
+  _diffuserL.init(_samplingFrequency);
+  _diffuserR.init( _samplingFrequency);
+  _diffuserC1.init(_samplingFrequency);
+  _diffuserC2.init(_samplingFrequency);
 
   clear();
 
@@ -80,7 +81,7 @@ void Delay::process(const t_float* const* input, t_float** output, int frames, i
 
 void Delay::singleDelay(const t_float* const* input, t_float** output, DelayMode mode, int frames, int delayIndex, int panning, int inChannels, int outChannels)
 {
-  static bool firstTap = false;
+  bool firstTap = (delayIndex == 1);
   SingleDelay* delay;
   switch (_mode)
   {
@@ -89,7 +90,6 @@ void Delay::singleDelay(const t_float* const* input, t_float** output, DelayMode
     break;
   case DUAL_TAP:
     delay = &_dualTapDelays[delayIndex];
-    firstTap = !firstTap;
     break;
   case MONO:
   case TAPE:
@@ -178,31 +178,29 @@ void Delay::singleDelay(const t_float* const* input, t_float** output, DelayMode
     }
 
     normalize(&output[0][i]);
-    normalize(&output[1][i]);
+    if (outChannels > 1)
+      normalize(&output[1][i]);
   }
 }
 
 void Delay::recalculate()
 {
-  int bufferLength = _baseTime * _samplingFrequency;
-  _circularDelays[0].bufferLength = bufferLength;
+  _circularDelays[0].bufferLength = std::clamp(int(_baseTime * _samplingFrequency), 1, BUFFER_SIZE - 2);
   _circularDelays[0].feedbackLevel = _feedbackLvl;
 
-  bufferLength = 2 * _baseTime * _samplingFrequency;
-  _circularDelays[1].bufferLength = bufferLength;
+  _circularDelays[1].bufferLength = std::clamp(int(1.97 * _baseTime * _samplingFrequency), 1, BUFFER_SIZE - 2);
   _circularDelays[1].feedbackLevel = _feedbackLvl;
 
-  bufferLength = 3 * _baseTime * _samplingFrequency;
-  _circularDelays[2].bufferLength = bufferLength;
+  _circularDelays[2].bufferLength = std::clamp(int(2.94 * _baseTime * _samplingFrequency), 1, BUFFER_SIZE - 2);;
   _circularDelays[2].feedbackLevel = _feedbackLvl;
 
-  _dualTapDelays[0].bufferLength = _baseTime * _samplingFrequency;
+  _dualTapDelays[0].bufferLength = std::clamp(int(_baseTime * _samplingFrequency), 1, BUFFER_SIZE - 2);
   _dualTapDelays[0].feedbackLevel = _feedbackLvl;
 
-  _dualTapDelays[1].bufferLength = _baseTime2 * _samplingFrequency;
+  _dualTapDelays[1].bufferLength = std::clamp(int(_baseTime2 * _samplingFrequency), 1, BUFFER_SIZE - 2);
   _dualTapDelays[1].feedbackLevel = _feedbackLvl;
 
-  _generalDelay[0].bufferLength = _baseTime * _samplingFrequency;
+  _generalDelay[0].bufferLength = std::clamp(int(_baseTime * _samplingFrequency), 1, BUFFER_SIZE - 2);
   _generalDelay[0].feedbackLevel = _feedbackLvl;
 }
 
