@@ -23,6 +23,7 @@ void Amp::reload()
     }
 
     loadModel(_settings.model);
+    loadSubModel(_settings.subModel);
 
     // Tonestack
     BiQuadFilterParams bassParams{};
@@ -56,6 +57,9 @@ void Amp::reload()
     _inputGainAmp = pow(10.0f, _settings.inputGain / 20.0f);
 
     _enabled = _settings.ampEnabled;
+    _subEnabled = _settings.subAmpEnabled;
+    _subBlend = _settings.subBlend;
+    _subMode = _settings.subMode;
 }
 
 void Amp::loadModel(const std::string &name)
@@ -63,11 +67,8 @@ void Amp::loadModel(const std::string &name)
     bool currentlyEnabled = _enabled;
     _enabled = false;
 
-    if (_model == nullptr)
-        _model = new NeuralAudio::NeuralModel;
-
     const auto modelPath{std::string{"../models/"} + name + ".nam"};
-    log_info << "Loading amp model from: " + modelPath; 
+    log_info << "Loading amp model from: " + modelPath;
 
     NeuralAudio::NeuralModelLoader loader;
     _model = loader.CreateFromFile(modelPath);
@@ -85,17 +86,46 @@ void Amp::loadModel(const std::string &name)
     _enabled = currentlyEnabled;
 
     Storage::get().persist<AmpSettings>(_settings, "amp");
-    log_info << "Amp loaded";
+}
+
+void Amp::loadSubModel(const std::string &name)
+{
+    bool currentlyEnabled = _subEnabled;
+    _subEnabled = false;
+
+    const auto modelPath{std::string{"../models/"} + name + ".nam"};
+    log_info << "Loading sub amp model from: " + modelPath;
+
+    NeuralAudio::NeuralModelLoader loader;
+    loader.SetDefaultQualityScaleFactor(0.6f);
+    _sub_model = loader.CreateFromFile(modelPath);
+    _sub_model->SetQualityScaleFactor(0.5f);
+
+    log_info << "Sub amp loaded with model: " << _sub_model->GetLoadMode();
+
+    _subInputCorrection = pow(10.0f, _sub_model->GetRecommendedInputDBAdjustment() / 20.0f);
+    _subOutputCorrection = pow(10.0f, _sub_model->GetRecommendedOutputDBAdjustment() / 20.0f);
+
+    log_info << "Sub Input Correction: " << _sub_model->GetRecommendedInputDBAdjustment() << "db, factor: " << _subInputCorrection;
+    log_info << "Sub Output Correction: " << _sub_model->GetRecommendedOutputDBAdjustment() << "db, factor: " << _subOutputCorrection;
+
+    _settings.subModel = name;
+
+    _subEnabled = currentlyEnabled;
+
+    Storage::get().persist<AmpSettings>(_settings, "amp");
 }
 
 void Amp::process(const float *input, float *output, const size_t numFrames)
 {
     float outMax = 0;
     float inMax = 0;
-    
+    float subOutput[numFrames];
+
     // apply input gain
     for (int i = 0; i < numFrames; i++)
     {
+        subOutput[i] = input[i] * _inputGainAmp * _subInputCorrection;
         output[i] = input[i] * _inputGainAmp * _inputCorrection;
         if (std::abs(output[i]) > inMax)
             inMax = std::abs(output[i]);
@@ -106,7 +136,32 @@ void Amp::process(const float *input, float *output, const size_t numFrames)
     // preamp
     if (_enabled)
     {
-        _model->Process(output, output, numFrames);
+        if (_subEnabled)
+        {
+            if (_subMode == "PARALLEL")
+            {
+                _model->Process(output, output, numFrames);
+                _sub_model->Process(subOutput, subOutput, numFrames);
+    
+                for (int i = 0; i < numFrames; i++)
+                    output[i] = (output[i] * _outputCorrection * (1.0f - _subBlend)) + (subOutput[i] * _subOutputCorrection * _subBlend);
+            } 
+            else if (_subMode == "SERIES")
+            {
+                _sub_model->Process(output, output, numFrames);
+                for (int i = 0; i < numFrames; i++)
+                    output[i] = output[i] * _subOutputCorrection;
+                _model->Process(output, output, numFrames);
+                for (int i = 0; i < numFrames; i++)
+                    output[i] = output[i] * _outputCorrection;
+            }
+        }
+        else
+        {
+            _model->Process(output, output, numFrames);
+            for (int i = 0; i < numFrames; i++)
+                output[i] = output[i] * _outputCorrection;
+        }
 
         if (_settings.tonestackEnabled)
         {
@@ -126,11 +181,11 @@ void Amp::process(const float *input, float *output, const size_t numFrames)
     // apply output gain
     for (int i = 0; i < numFrames; i++)
     {
-        output[i] = output[i] * _outputCorrection * _mvGainAmp;
+        output[i] = output[i] * _mvGainAmp;
         if (std::abs(output[i]) > outMax)
             outMax = std::abs(output[i]);
     }
-        
+
     _outputRMS = outMax;
 }
 
@@ -145,6 +200,20 @@ void Amp::setInputGain(float gainDB)
 {
     _settings.inputGain = gainDB;
     _inputGainAmp = pow(10.0f, _settings.inputGain / 20.0f);
+    Storage::get().persist<AmpSettings>(_settings, "amp");
+}
+
+void Amp::setSubBlend(float blend)
+{
+    _settings.subBlend = blend;
+    _subBlend = blend;
+    Storage::get().persist<AmpSettings>(_settings, "amp");
+}
+
+void Amp::setSubMode(std::string mode)
+{
+    _settings.subMode = mode;
+    _subMode = mode;
     Storage::get().persist<AmpSettings>(_settings, "amp");
 }
 

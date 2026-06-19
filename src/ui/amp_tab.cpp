@@ -4,7 +4,9 @@
 
 static void backEventHandler(lv_event_t *e);
 static void onAmpButtonPowerClicked(lv_event_t *e);
+static void onSubAmpButtonPowerClicked(lv_event_t *e);
 static void onAmpModelPicked(lv_event_t *e);
+static void onSubAmpModelPicked(lv_event_t *e);
 static void onAmpSliderMoved(lv_event_t *e);
 static void onTonestackKnobMoved(lv_event_t *e);
 static void onTonestackPowerClicked(lv_event_t *e);
@@ -59,30 +61,34 @@ void AmpTab::createLayout()
     lv_obj_t *root_page = lv_menu_page_create(menu, "Amp Settings");
     lv_obj_set_style_pad_hor(root_page, lv_obj_get_style_pad_left(lv_menu_get_main_header(menu), 0), 0);
     section = lv_menu_section_create(root_page);
-    cont = create_switch(section, LV_SYMBOL_POWER, "Enabled", ampSettings->ampEnabled);
-    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onAmpButtonPowerClicked, LV_EVENT_VALUE_CHANGED, this);
 
-    cont = lv_menu_cont_create(section);
-    lv_obj_t *ampSelector = lv_dropdown_create(cont);
-    lv_obj_set_flex_grow(ampSelector, 1);
-    lv_obj_set_style_text_color(ampSelector, lv_color_make(224, 26, 79), LV_PART_INDICATOR);
+    cont = create_switch(section, LV_SYMBOL_POWER, "Main Amp Enabled", ampSettings->ampEnabled);
+    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onAmpButtonPowerClicked, LV_EVENT_VALUE_CHANGED, this);
 
     auto modelsPath = std::string("../models/");
 
     std::string models;
     int index = 0;
     int pickedOne = 0;
+    int pickedSubOne = 0;
     for (const auto &file : std::filesystem::directory_iterator(modelsPath))
     {
         std::string filename = file.path().stem();
         if (filename == ampSettings->model)
             pickedOne = index;
+        if (filename == ampSettings->subModel)
+            pickedSubOne = index;
         models += filename;
         models += "\n";
         index++;
     }
     if (!models.empty())
         models.pop_back();
+
+    cont = lv_menu_cont_create(section);
+    lv_obj_t *ampSelector = lv_dropdown_create(cont);
+    lv_obj_set_flex_grow(ampSelector, 1);
+    lv_obj_set_style_text_color(ampSelector, lv_color_make(224, 26, 79), LV_PART_INDICATOR);
 
     lv_dropdown_set_options(ampSelector, models.c_str());
     lv_dropdown_set_selected(ampSelector, pickedOne, NULL);
@@ -92,7 +98,43 @@ void AmpTab::createLayout()
     lv_obj_align(ampSelector, LV_ALIGN_BOTTOM_LEFT, 0, 20);
     lv_obj_add_event_cb(ampSelector, onAmpModelPicked, LV_EVENT_ALL, this);
 
+    section = lv_menu_section_create(root_page);
+    lv_obj_set_style_margin_top(section, 20, 0);
+
+    cont = create_switch(section, LV_SYMBOL_POWER, "Front Amp Enabled", ampSettings->subAmpEnabled);
+    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onSubAmpButtonPowerClicked, LV_EVENT_VALUE_CHANGED, this);
+
+    lv_obj_t *subAmpSelector = lv_dropdown_create(cont);
+    lv_obj_set_flex_grow(subAmpSelector, 1);
+    lv_obj_set_style_text_color(subAmpSelector, lv_color_make(224, 26, 79), LV_PART_INDICATOR);
+
+    lv_dropdown_set_options(subAmpSelector, models.c_str());
+    lv_dropdown_set_selected(subAmpSelector, pickedSubOne, NULL);
+
+    lv_obj_add_flag(subAmpSelector, LV_OBJ_FLAG_FLEX_IN_NEW_TRACK);
+    lv_obj_set_flex_grow(subAmpSelector, 1);
+    lv_obj_align(subAmpSelector, LV_ALIGN_BOTTOM_LEFT, 0, 30);
+    lv_obj_add_event_cb(subAmpSelector, onSubAmpModelPicked, LV_EVENT_ALL, this);
+
     char buf[8];
+
+    auto subMode = ampSettings->subMode;
+    int subModePos = subMode == "PARALLEL" ? 0 : 1;
+    cont = create_slider(section, LV_SYMBOL_EDIT, "Front Amp Wiring Mode", 0, 1, subModePos, subMode.c_str());
+    lv_obj_set_user_data(lv_obj_get_child(cont, 2), &_subModeInfo);
+    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onAmpSliderMoved, LV_EVENT_VALUE_CHANGED, NULL);
+
+    auto subBlend = ampSettings->subBlend;
+    int subBlendPos = subBlend * 100;
+    lv_snprintf(buf, sizeof(buf), "%d%%", subBlendPos);
+    cont = create_slider(section, LV_SYMBOL_EDIT, "Front Amp Parallel Blend", 0, 100, subBlendPos, buf);
+    lv_obj_set_user_data(lv_obj_get_child(cont, 2), &_subBlendInfo);
+    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onAmpSliderMoved, LV_EVENT_VALUE_CHANGED, NULL);
+
+
+    section = lv_menu_section_create(root_page);
+    lv_obj_set_style_margin_top(section, 30, 0);
+
     float inputGain = ampSettings->inputGain;
     int inputGainPos = dbToPosition(inputGain) * 100;
     inputGain = std::round(inputGain * 10.0f) / 10.0f;
@@ -111,6 +153,12 @@ void AmpTab::createLayout()
 
     _inputMeter = levelMeter(section, "Input");
     _outputMeter = levelMeter(section, "Output");
+
+    section = lv_menu_section_create(root_page);
+    lv_obj_set_style_margin_top(section, 20, 0);
+
+    cont = create_switch(section, LV_SYMBOL_POWER, "Tonestack Enabled", ampSettings->tonestackEnabled);
+    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onTonestackPowerClicked, LV_EVENT_VALUE_CHANGED, this);
 
     static lv_style_t noFrame;
     lv_style_init(&noFrame);
@@ -149,6 +197,12 @@ static void onAmpButtonPowerClicked(lv_event_t *e)
     self->handleAmpPower(e);
 }
 
+static void onSubAmpButtonPowerClicked(lv_event_t *e)
+{
+    auto *self = static_cast<AmpTab *>(lv_event_get_user_data(e));
+    self->handleSubAmpPower(e);
+}
+
 static void onTonestackPowerClicked(lv_event_t *e)
 {
     auto *self = static_cast<AmpTab *>(lv_event_get_user_data(e));
@@ -174,6 +228,15 @@ void AmpTab::handleAmpPower(lv_event_t *e)
     }
 }
 
+void AmpTab::handleSubAmpPower(lv_event_t *e)
+{
+    if (lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED)
+    {
+        lv_obj_t *obj = lv_event_get_target_obj(e);
+        _amp->subEnabled(lv_obj_has_state(obj, LV_STATE_CHECKED));
+    }
+}
+
 void AmpTab::handleTonestackPower(lv_event_t *e)
 {
     if (lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED)
@@ -187,6 +250,12 @@ void AmpTab::changeAmpModel(const char *newModel)
 {
     log_info << "Loading Amp: " << newModel;
     _amp->loadModel(newModel);
+}
+
+void AmpTab::changeSubAmpModel(const char *newModel)
+{
+    log_info << "Loading Sub Amp: " << newModel;
+    _amp->loadSubModel(newModel);
 }
 
 float AmpTab::getInputLevel()
@@ -228,15 +297,38 @@ static void onAmpModelPicked(lv_event_t *e)
     }
 }
 
+static void onSubAmpModelPicked(lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t *obj = lv_event_get_target_obj(e);
+    if (code == LV_EVENT_VALUE_CHANGED)
+    {
+        char buf[64];
+        lv_dropdown_get_selected_str(obj, buf, sizeof(buf));
+        auto *self = static_cast<AmpTab *>(lv_event_get_user_data(e));
+        self->changeSubAmpModel(buf);
+    }
+}
+
 static void onAmpSliderMoved(lv_event_t *e)
 {
     lv_obj_t *slider = lv_event_get_target_obj(e);
     AmpControlInfo *data = static_cast<AmpControlInfo *>(lv_obj_get_user_data(slider));
-    float gainDB = positionToDb((float)lv_slider_get_value(slider) / 100.0f);
     if (data->param == 1)
-        data->ampRef->setInputGain(gainDB);
+        data->ampRef->setSubBlend((float)lv_slider_get_value(slider) / 100.0f);
     else if (data->param == 2)
-        data->ampRef->setMVGain(gainDB);
+        data->ampRef->setInputGain(positionToDb((float)lv_slider_get_value(slider) / 100.0f));
+    else if (data->param == 3)
+        data->ampRef->setMVGain(positionToDb((float)lv_slider_get_value(slider) / 100.0f));
+    else if (data->param == 7)
+    {
+        auto mode = lv_slider_get_value(slider) == 0 ? "PARALLEL" : "SERIES";
+        data->ampRef->setSubMode(mode);
+        lv_obj_t * parent = lv_obj_get_parent(slider);
+        lv_obj_t * label = lv_obj_get_child(parent, 3);
+        lv_label_set_text(label, mode);
+        lv_obj_align_to(label, parent, LV_ALIGN_CENTER, 0, 0);
+    }
 }
 
 static void onTonestackKnobMoved(lv_event_t *e)
@@ -245,10 +337,10 @@ static void onTonestackKnobMoved(lv_event_t *e)
     AmpControlInfo *data = static_cast<AmpControlInfo *>(lv_obj_get_user_data(knob));
     float value = (float)lv_arc_get_value(knob) / 10.0f;
 
-    if (data->param == 3)
+    if (data->param == 4)
         data->ampRef->setBass(value);
-    else if (data->param == 4)
-        data->ampRef->setMiddle(value);
     else if (data->param == 5)
+        data->ampRef->setMiddle(value);
+    else if (data->param == 6)
         data->ampRef->setTreble(value);
 }

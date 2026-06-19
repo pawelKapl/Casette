@@ -38,7 +38,7 @@ struct Storage
         std::filesystem::create_directory("../storage/");
         std::ofstream file("../storage/activePreset.txt");
         file << State::get().activePreset;
-        std::cout << "persisted: " <<State::get().activePreset << "\n";
+        log_info << "persisted: " <<State::get().activePreset << "\n";
     }
 
     std::string loadActivePreset()

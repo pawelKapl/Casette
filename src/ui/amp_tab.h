@@ -29,8 +29,10 @@ public:
     void updateLevelMeters();
 
     void handleAmpPower(lv_event_t *e);
+    void handleSubAmpPower(lv_event_t *e);
     void handleTonestackPower(lv_event_t *e);
     void changeAmpModel(const char *newModel);
+    void changeSubAmpModel(const char *newModel);
     void createLayout();
     
     private:
@@ -43,10 +45,11 @@ public:
     lv_obj_t *_outputMeter;
     Amp *_amp;
 
-    AmpControlInfo _inputGainInfo{_amp, 1};
-    AmpControlInfo _mvInfo{_amp, 2};
-    AmpControlInfo _bassInfo{_amp, 3};
-    AmpControlInfo _middleInfo{_amp, 4};
-    AmpControlInfo _trebleInfo{_amp, 5};
-    AmpControlInfo _masterInfo{_amp, 6};
+    AmpControlInfo _subBlendInfo{_amp, 1};
+    AmpControlInfo _inputGainInfo{_amp, 2};
+    AmpControlInfo _mvInfo{_amp, 3};
+    AmpControlInfo _bassInfo{_amp, 4};
+    AmpControlInfo _middleInfo{_amp, 5};
+    AmpControlInfo _trebleInfo{_amp, 6};
+    AmpControlInfo _subModeInfo{_amp, 7};
 };
