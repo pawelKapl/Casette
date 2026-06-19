@@ -13,7 +13,8 @@
 - Tuner
 
 ## Features
-- Neural amp modeler amp simulation unit (A1 & A2 standard) with full tonectack
+- Neural amp modeler amp simulation unit (A1 & A2 standard) with full tonestack
+- Running two NAM instances (amps) at once with parallel/series adjustment and blend control. 
 - IR loader for cab simulation
 - Noise Gate
 - Delays: Mono, Tape, Dual Tap, Ping Pong, Circular, reverse (coming)
