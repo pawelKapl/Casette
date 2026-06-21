@@ -2,7 +2,7 @@
 #include "json.hpp"
 #include <list>
 
-Amp::Amp(CabSimulator *cab) : _cab(cab) {}
+Amp::Amp(CpuMonitor* cpuMonitor, CabSimulator *cab) : _cab(cab), _cpuMonitor(cpuMonitor) {}
 
 Amp::~Amp()
 {
@@ -97,9 +97,8 @@ void Amp::loadSubModel(const std::string &name)
     log_info << "Loading sub amp model from: " + modelPath;
 
     NeuralAudio::NeuralModelLoader loader;
-    loader.SetDefaultQualityScaleFactor(0.6f);
     _sub_model = loader.CreateFromFile(modelPath);
-    _sub_model->SetQualityScaleFactor(0.5f);
+    _subQualityDowngraded = false;
 
     log_info << "Sub amp loaded with model: " << _sub_model->GetLoadMode();
 
@@ -118,6 +117,8 @@ void Amp::loadSubModel(const std::string &name)
 
 void Amp::process(const float *input, float *output, const size_t numFrames)
 {
+    performanceScaling();
+
     float outMax = 0;
     float inMax = 0;
     float subOutput[numFrames];
@@ -187,6 +188,35 @@ void Amp::process(const float *input, float *output, const size_t numFrames)
     }
 
     _outputRMS = outMax;
+}
+
+void Amp::performanceScaling()
+{
+    static int counter = 0;
+    if (!_subQualityDowngraded && _subEnabled && _sub_model->HasQualityScaling() && _sub_model->IsQualityChangeRealtimeSafe(0.5f))
+    {
+        float cpuUsage = _cpuMonitor->getCpuState()[0];
+        if (int(cpuUsage) > 95)
+        {
+            counter++;
+        }
+        else
+        {
+            counter = 0;
+        }
+
+        if (counter > 500)
+        {
+            counter = 0;
+            _subQualityDowngraded = true;
+            _sub_model->SetQualityScaleFactor(0.5f);
+            log_info << "Reducing Quality for Sub Model due to high CPU usage.";
+        }
+    }
+    else 
+    {
+        counter = 0;
+    }
 }
 
 void Amp::setMVGain(float gainDB)

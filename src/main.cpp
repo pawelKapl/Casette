@@ -9,6 +9,7 @@
 #include "dsp/tuner.h"
 #include "dsp/amp.h"
 #include "state.h"
+#include "cpu_monitor.h"
 
 int setup();
 
@@ -28,18 +29,19 @@ const char *GPIO_CHIP = "gpiochip0";
 gpiod_chip *chip;
 
 std::array<std::unique_ptr<GPIOButton>, 3> footswitches;
+CpuMonitor cpuMonitor;
 
 std::atomic<bool> running{true};
 std::atomic<bool> bypass{false};
 AudioClient client;
 
 CabSimulator cabSim;
-Amp amp{&cabSim};
+Amp amp{&cpuMonitor, &cabSim};
 NoiseGate noiseGate;
 FxChain fxChain;
 Tuner tuner{48000, 4096, 64};
 
-GUI gui(&fxChain, &cabSim, &amp, &noiseGate, &tuner, &footswitches);
+GUI gui(&fxChain, &cabSim, &amp, &noiseGate, &tuner, &footswitches, &cpuMonitor);
 
 void signalHandler(int signum)
 {
@@ -86,6 +88,7 @@ int audio_callback(j_int nframes, void *arg)
 
 void programLoop()
 {
+    cpuMonitor.tick();
     gui.update();
     usleep(5000);
 }

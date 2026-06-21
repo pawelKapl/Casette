@@ -18,12 +18,13 @@
 class GUI
 {
 public:
-    GUI(FxChain *fxChain, CabSimulator *cabSim, Amp *amp, NoiseGate *ng, Tuner *tuner, std::array<std::unique_ptr<GPIOButton>, 3> *footswitches)
+    GUI(FxChain *fxChain, CabSimulator *cabSim, Amp *amp, NoiseGate *ng, Tuner *tuner, std::array<std::unique_ptr<GPIOButton>, 3> *footswitches, CpuMonitor* cpuMonitor)
         : _fxChain(fxChain),
           _cabSimulator(cabSim),
           _amp(amp),
           _noiseGate(ng),
           _tuner(tuner),
+          _cpuMonitor(cpuMonitor),
           _footswitches(footswitches) {}
 
     ~GUI();
@@ -51,6 +52,7 @@ private:
     std::unique_ptr<ReverbTab> _reverbTab;
     std::unique_ptr<MiscTab> _miscTab;
 
+    CpuMonitor *_cpuMonitor;
     FxChain *_fxChain;
     CabSimulator *_cabSimulator;
     Amp *_amp;

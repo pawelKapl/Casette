@@ -432,9 +432,10 @@ void GUI::createTabMenu()
     std::vector<int32_t> cpuData = {};
     if (_miscTab)
         cpuData = _miscTab->getCpuData();
-    _miscTab = std::make_unique<MiscTab>(_tabview, std::array<GPIOButton *, 3>{_footswitches->operator[](0).get(),
+    _miscTab = std::make_unique<MiscTab>(_tabview, _cpuMonitor, std::array<GPIOButton *, 3>{_footswitches->operator[](0).get(),
                                                                                _footswitches->operator[](1).get(),
-                                                                               _footswitches->operator[](2).get()}, cpuData);
+                                                                               _footswitches->operator[](2).get()}, 
+                                                                               cpuData);
 
     tab_count = lv_tabview_get_tab_count(_tabview);
     for (i = 0; i < tab_count; i++)

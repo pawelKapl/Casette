@@ -2,12 +2,13 @@
 
 #include "lvgl/lvgl.h"
 #include "env.h"
+#include "cpu_monitor.h"
 #include "platform/gpio_button.h"
 
 class MiscTab
 {
 public:
-    MiscTab(lv_obj_t *tabview, std::array<GPIOButton*,3> fs, std::vector<int32_t> cpuData = {}) : footswitches(fs)
+    MiscTab(lv_obj_t *tabview, CpuMonitor* cpuMonitor, std::array<GPIOButton*,3> fs, std::vector<int32_t> cpuData = {}) : footswitches(fs), _cpuMonitor(cpuMonitor)
     {
         _tab = lv_tabview_add_tab(tabview, "Misc");
         lv_obj_set_scroll_dir(_tab, LV_DIR_VER);
@@ -45,6 +46,7 @@ private:
     lv_obj_t * _midFsSelector;
     lv_obj_t * _rightFsSelector;
 
+    CpuMonitor* _cpuMonitor;
 
     int pickedPreset = 0;
 };

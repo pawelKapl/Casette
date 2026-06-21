@@ -4,6 +4,7 @@
 #include "dsp/IIR_filter.h"
 #include "cab_simulator.h"
 #include "storage.h"
+#include "cpu_monitor.h"
 #include "NeuralModel.h"
 
 struct AmpSettings
@@ -90,7 +91,7 @@ inline void from_json(const nlohmann::json& j, AmpSettings& a) {
 class Amp
 {
 public:
-    Amp(CabSimulator *cab = nullptr);
+    Amp(CpuMonitor* cpuMonitor, CabSimulator *cab = nullptr);
     ~Amp();
     void loadModel(const std::string &path);
     void loadSubModel(const std::string &path);
@@ -133,11 +134,14 @@ public:
     }
 
 private:
+    void performanceScaling();
+
     std::atomic<bool> _enabled{false};
     std::atomic<bool> _subEnabled{false};
     NeuralAudio::NeuralModel *_model = nullptr;
     NeuralAudio::NeuralModel *_sub_model = nullptr;
     CabSimulator *_cab = nullptr;
+    CpuMonitor *_cpuMonitor = nullptr;
     
     float _inputCorrection;
     float _subInputCorrection;
@@ -146,6 +150,7 @@ private:
     float _mvGainAmp;
     float _inputGainAmp;
     float _subBlend;
+    bool _subQualityDowngraded = false;
     std::string _subMode = "PARALLEL";
 
     AmpSettings _settings;

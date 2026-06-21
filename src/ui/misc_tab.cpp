@@ -338,22 +338,6 @@ long get_memory_usage_mb() {
     return -1;
 }
 
-static unsigned long long get_process_time() {
-    std::ifstream file("/proc/self/stat");
-    std::string dummy;
-    unsigned long long utime, stime;
-    for (int i = 0; i < 13; ++i) file >> dummy;  // Skip first 13 fields
-    file >> utime >> stime;  // 14th and 15th fields
-    return utime + stime;
-}
-
-float get_cpu_temperature() {
-    std::ifstream file("/sys/class/thermal/thermal_zone0/temp");
-    int temp_millideg;
-    file >> temp_millideg;
-    return temp_millideg / 1000.0f;
-}
-
 std::vector<int32_t> MiscTab::getCpuData()
 {
     std::vector<int32_t> dataY;
@@ -371,23 +355,16 @@ std::vector<int32_t> MiscTab::getCpuData()
 
 void MiscTab::updateCpuChart()
 {
-    static unsigned long long t1 = 0;
+    auto cpuState = _cpuMonitor->getCpuState();
+    auto cpuUsage = cpuState[0];
 
-    unsigned long long t2 = get_process_time();
-
-    auto clk_tck = sysconf(_SC_CLK_TCK);
-    float cpu_time = (t2 - t1) / static_cast<float>(clk_tck);  // seconds
-    float cpuUsage = (cpu_time * 1000.0f) / 1000.0f * 100.0f; 
-    float cpuTemp = get_cpu_temperature();
-
-    std::string cpuLabel =  "\nCpu temperature: " + std::to_string(int(cpuTemp)) + "°C \nCpu load: " + std::to_string(int(cpuUsage)) + "%";
+    std::string cpuLabel =  "\nCpu temperature: " + std::to_string(int(cpuState[1])) + "°C \nCpu load: " + std::to_string(int(cpuUsage)) + "%";
 
     lv_label_set_text(_cpuLabel, cpuLabel.c_str());
 
     if (cpuUsage > 100)
         cpuUsage = 100;
     lv_chart_set_next_value(_cpuChart, _cpuChartSeries, (int32_t)(cpuUsage));
-    t1 = t2;
 
     std::string memoryLabel = "Memory utilization: " + std::to_string(int(get_memory_usage_mb())) + "MB";
     lv_label_set_text(_memoryLabel, memoryLabel.c_str());
