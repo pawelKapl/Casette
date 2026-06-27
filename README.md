@@ -95,3 +95,7 @@ dtoverlay=hifiberry-dacplusadcpro
 
 ### Test video: 
 [![Watch the video](https://i.ytimg.com/vi/pGTkpytEGvQ/oar2.jpg?sqp=-oaymwEoCJUDENAFSFqQAgHyq4qpAxcIARUAAIhC2AEB4gEKCBgQAhgGOAFAAQ==&rs=AOn4CLDyASWbmikuPllF9DrZUUQPOz3kVA&usqp=CCk)](https://www.youtube.com/shorts/pGTkpytEGvQ)
+
+### Test Audio:
+[![Watch the video](https://i.ytimg.com/vi/c09Gy6-Nhic/hqdefault.jpg?sqp=-oaymwFBCNACELwBSFryq4qpAzMIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB8AEB-AH-CYAC0AWKAgwIABABGGUgZShlMA8=&rs=AOn4CLDWLlUPZHn1p3z6lXIs_XmGChFysQ)](https://youtu.be/c09Gy6-Nhic)
+
