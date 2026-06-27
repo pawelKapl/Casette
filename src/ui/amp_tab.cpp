@@ -317,9 +317,9 @@ static void onAmpSliderMoved(lv_event_t *e)
     if (data->param == 1)
         data->ampRef->setSubBlend((float)lv_slider_get_value(slider) / 100.0f);
     else if (data->param == 2)
-        data->ampRef->setInputGain(positionToDb((float)lv_slider_get_value(slider) / 100.0f));
+        data->ampRef->setInputGain(positionToDb((float)lv_slider_get_value(slider) / 100.0f, -50.0f, 12.0f));
     else if (data->param == 3)
-        data->ampRef->setMVGain(positionToDb((float)lv_slider_get_value(slider) / 100.0f));
+        data->ampRef->setMVGain(positionToDb((float)lv_slider_get_value(slider) / 100.0f, -50.0f, 12.0f));
     else if (data->param == 7)
     {
         auto mode = lv_slider_get_value(slider) == 0 ? "PARALLEL" : "SERIES";

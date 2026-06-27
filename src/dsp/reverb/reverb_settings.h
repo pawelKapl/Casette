@@ -4,12 +4,13 @@ struct ReverbSettings
 {
 	int reverbMode = 0;
 	int mix = 20;
-	int roomSize = 40;
+	int roomSize = 50;
 	int damping = 10;
 	int preDelay = 31;
 	int hiPass = 300;
 	int loPass = 3500;
 	int enabled = false;
+	int decay = 40;
 
 	int* getParam(int index)
 	{
@@ -31,6 +32,8 @@ struct ReverbSettings
 				return &loPass;
 			case 7:
 				return &enabled;
+			case 8:
+				return &decay;
 			default:
 				return nullptr;
 		}
@@ -46,7 +49,8 @@ inline void to_json(nlohmann::json& j, const ReverbSettings& d) {
         {"roomSize", d.roomSize},
         {"hiPass", d.hiPass},
         {"loPass", d.loPass},
-        {"enabled", d.enabled}
+        {"enabled", d.enabled},
+		{"decay", d.decay}
     };
 }
 
@@ -59,4 +63,5 @@ inline void from_json(const nlohmann::json& j, ReverbSettings& d) {
     j.at("hiPass").get_to(d.hiPass);
     j.at("loPass").get_to(d.loPass);
     j.at("enabled").get_to(d.enabled);
+	d.decay = j.value("decay", 40);
 }

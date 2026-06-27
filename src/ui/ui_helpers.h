@@ -107,8 +107,8 @@ static void update_slider_value_db(lv_event_t * e)
     lv_obj_t * label = lv_obj_get_child(parent, 3);
 
     auto sliderPos = (float)lv_slider_get_value(slider) / 100.0f;
-    float dB = positionToDb(sliderPos);
-    float dB_rounded = std::round(dB * 10.0f) / 10.0f;
+    float dB = positionToDb(sliderPos, -50.0f, 12.0f);
+    float dB_rounded = std::round(dB * 10.0f) / 12.0f;
 
     char buf[8];
     std::snprintf(buf, sizeof(buf), "%+.1fdB", dB_rounded);

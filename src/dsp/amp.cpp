@@ -205,7 +205,7 @@ void Amp::performanceScaling()
             counter = 0;
         }
 
-        if (counter > 500)
+        if (counter > 250)
         {
             counter = 0;
             _subQualityDowngraded = true;

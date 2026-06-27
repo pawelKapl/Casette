@@ -3,28 +3,36 @@
 #include "dsp_math.h"
 
 #define BUFFER_OVERLAP 15
+#define MAX_BUFFER_SIZE 5000
 
 class Comb
 {
 public:
-  Comb() = default;
+  Comb()
+  {
+    for (int i = 0; i < MAX_BUFFER_SIZE; ++i)
+      _buffer[i] = 0;
+  }
 
   Comb(t_float feedback, int delayLength, int samplingFrequency)
-    : _feedback(feedback),
-      _delay(delayLength),
-      _buffer(delayLength + BUFFER_OVERLAP)
+      : _feedback(feedback),
+        _delay(delayLength),
+        _maxDelay(delayLength + BUFFER_OVERLAP)
   {
-    for (int i = 0; i < _delay + BUFFER_OVERLAP; ++i)
+    for (int i = 0; i < MAX_BUFFER_SIZE; ++i)
       _buffer[i] = 0;
   }
 
   inline t_float process(t_float input, int offset)
   {
-    int bufferSize = _delay + BUFFER_OVERLAP;
-    int modDelay = _delay + offset;
+    int modDelay =
+        std::clamp(
+            _delay + offset,
+            1,
+            _maxDelay - 1);
 
-    _index = (_index + 1) % bufferSize;
-    int readIndex = (_index - modDelay + bufferSize) % bufferSize;
+    _index = (_index + 1) % _maxDelay;
+    int readIndex = (_index - modDelay + _maxDelay) % _maxDelay;
 
     t_float delayed = _buffer[readIndex];
 
@@ -44,7 +52,16 @@ public:
 
   void setDamp(t_float damp)
   {
-    _damp = damp;
+    _damp = std::clamp(
+        damp,
+        0.0f,
+        0.99f);
+  }
+
+  void setDelay(int delay)
+  {
+    _delay = std::clamp(delay, 1, MAX_BUFFER_SIZE);
+    _maxDelay = _delay + BUFFER_OVERLAP;
   }
 
 private:
@@ -53,6 +70,6 @@ private:
   t_float _damp = 0.0f;
   t_float _damped = 0.0f;
   int _delay;
-  std::vector<t_float> _buffer;
+  int _maxDelay;
+  std::array<t_float, MAX_BUFFER_SIZE> _buffer;
 };
-

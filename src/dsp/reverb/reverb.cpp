@@ -10,15 +10,15 @@ t_float *Reverb::init(t_float *memory)
 {
   t_float *currentPtr = memory;
 
-  currentPtr = _roomReverb[0].init(memory, _samplingFrequency);
-  currentPtr = _roomReverb[1].init(memory, _samplingFrequency);
+  currentPtr = _roomReverb[0].init(currentPtr, _samplingFrequency);
+  currentPtr = _roomReverb[1].init(currentPtr, _samplingFrequency);
 
   return currentPtr;
 }
 
 void Reverb::process(const t_float* const* input, t_float** output, int frames, int inChannels, int outChannels)
 {
-  for (int c = 0; c < inChannels; c++)
+  for (int c = 0; c < outChannels; c++)
   {
     for (int i = 0; i < frames; i++)
     {
@@ -27,11 +27,14 @@ void Reverb::process(const t_float* const* input, t_float** output, int frames, 
       _hiPassFilter[c].filter(inputSample, &inputSample);
       _lowPassFilter[c].filter(inputSample, &inputSample);
 
-      float out = _roomReverb[c].process(inputSample);
-    
-      output[c][i] += out * _reverbMix;
+      float wet = _roomReverb[c].process(inputSample);
 
-      normalize(&output[c][i]);
+      float wetGain = std::sqrt(_reverbMix);
+      float dryGain = std::sqrt(1.0f - _reverbMix);
+
+      output[c][i] =
+          inputSample * dryGain +
+          wet * wetGain;
     }  
   }
 }

@@ -40,4 +40,5 @@ private:
     ReverbControlInfo _preDelayInfo{_fxChain, 4};
     ReverbControlInfo _hiPassInfo{_fxChain, 5};
     ReverbControlInfo _loPassInfo{_fxChain, 6};
+    ReverbControlInfo _decayInfo{_fxChain, 8};
 };

@@ -54,7 +54,7 @@ void FxChain::reload()
 	_reverb = std::make_unique<Reverb>(48000);
 	_reverb->init(memPtr);
 	_reverb->setMix(float(_reverbSettings.mix) / 100.);
-	_reverb->setRoomSize(float(_reverbSettings.roomSize) / 100.);
+	_reverb->setCombFilters(float(_reverbSettings.roomSize) / 100., float(_reverbSettings.decay) / 100.);
 	_reverb->setHighPass(_reverbSettings.hiPass);
 	_reverb->setDamping(float(_reverbSettings.damping) / 100.);
 	_reverb->setLowPass(_reverbSettings.loPass);
@@ -112,7 +112,7 @@ void FxChain::adjustReverbParam(int param, int newValue)
 			_reverb->setMix(float(_reverbSettings.mix) / 100.);
 			break;
 		case 2:
-			_reverb->setRoomSize(float(_reverbSettings.roomSize) / 100.);
+			_reverb->setCombFilters(float(_reverbSettings.roomSize) / 100., float(_reverbSettings.decay) / 100.);
 			break;
 		case 3:
 			_reverb->setDamping(float(_reverbSettings.damping) / 100.);
@@ -125,6 +125,9 @@ void FxChain::adjustReverbParam(int param, int newValue)
 			break;
 		case 6:
 			_reverb->setLowPass(_reverbSettings.loPass);
+			break;
+		case 8:
+			_reverb->setCombFilters(float(_reverbSettings.roomSize) / 100., float(_reverbSettings.decay) / 100.);
 			break;
 	}
 

@@ -35,26 +35,48 @@ struct RoomReverb
     lfo = {0.5, samplingFrequency, 1, 0.1};
 
     setPreDelay(0.02f, samplingFrequency);
-    setRoomSize(0.6, samplingFrequency);
 
+    for (int i = 0; i < 8; i++)
+      combFilters.push_back({});
+
+    setCombFilters(0.5f, 0.5f, samplingFrequency);
     return currentPtr;
   }
 
-  void setRoomSize(float size, int samplingFrequency)
+  void setCombFilters(float roomSize, float decay, int samplingFrequency)
   {
-    combFilters.clear();
-    auto feedback = size * 0.29f + 0.7f;
+    float sizeModifier = 0.5f + roomSize * 2;
 
-    auto shift = right ? 23 : 0;
+    // RT60 od około 0.3 s do 12 s
+    float rt60 = 0.3f + decay * 11.7f;
 
-    combFilters.push_back({feedback, 1116 + shift, samplingFrequency});
-    combFilters.push_back({feedback, 1188 + shift, samplingFrequency});
-    combFilters.push_back({feedback, 1277 + shift, samplingFrequency});
-    combFilters.push_back({feedback, 1356 + shift, samplingFrequency});
-    combFilters.push_back({feedback, 1422 + shift, samplingFrequency});
-    combFilters.push_back({feedback, 1491 + shift, samplingFrequency});
-    combFilters.push_back({feedback, 1557 + shift, samplingFrequency});
-    combFilters.push_back({feedback, 1617 + shift, samplingFrequency});
+    int shift = right ? 23 : 0;
+
+    const int baseLengths[8] =
+        {
+            1116,
+            1188,
+            1277,
+            1356,
+            1422,
+            1491,
+            1557,
+            1617};
+
+    for (int i = 0; i < 8; i++)
+    {
+      int delayLength =
+          static_cast<int>(baseLengths[i] * sizeModifier) + shift;
+
+      float delaySeconds =
+          static_cast<float>(delayLength) /
+          static_cast<float>(samplingFrequency);
+
+      float feedback =
+          powf(10.0f, -3.0f * delaySeconds / rt60);
+      combFilters[i].setFeedback(feedback);
+      combFilters[i].setDelay(delayLength);
+    }
   }
 
   void setPreDelay(float delay, int samplingFrequency)
@@ -84,6 +106,7 @@ struct RoomReverb
     float combSum = 0.0f;
     for (int i = 0; i < 8; i++)
       combSum += combFilters[i].process(delayedSample, lfo.getOffset());
+    combSum *=  0.125f;
 
     float out = 0;
     diffuser.process(combSum, out);
@@ -123,10 +146,10 @@ public:
     _roomReverb[1].setPreDelay(preDelay, _samplingFrequency);
   }
 
-  inline void setRoomSize(float size)
+  inline void setCombFilters(float roomSize, float decay)
   {
-    _roomReverb[0].setRoomSize(size, _samplingFrequency);
-    _roomReverb[1].setRoomSize(size, _samplingFrequency);
+    _roomReverb[0].setCombFilters(roomSize, decay, _samplingFrequency);
+    _roomReverb[1].setCombFilters(roomSize, decay, _samplingFrequency);
   }
 
 private:

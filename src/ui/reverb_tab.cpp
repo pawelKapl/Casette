@@ -37,6 +37,11 @@ void ReverbTab::createLayout()
     lv_obj_set_user_data(lv_obj_get_child(cont, 2), &_mixInfo);
     lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onReverbSliderMoved, LV_EVENT_VALUE_CHANGED, NULL);
 
+    lv_snprintf(buf, sizeof(buf), "%d%%", reverbSettings->decay);
+    cont = create_slider(section, LV_SYMBOL_SETTINGS, "Decay", 0, 100, reverbSettings->decay, buf);
+    lv_obj_set_user_data(lv_obj_get_child(cont, 2), &_decayInfo);
+    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onReverbSliderMoved, LV_EVENT_VALUE_CHANGED, NULL);
+
     lv_snprintf(buf, sizeof(buf), "%d%%", reverbSettings->roomSize);
     cont = create_slider(section, LV_SYMBOL_SETTINGS, "Room Size", 0, 100, reverbSettings->roomSize, buf);
     lv_obj_set_user_data(lv_obj_get_child(cont, 2), &_roomSizeInfo);
