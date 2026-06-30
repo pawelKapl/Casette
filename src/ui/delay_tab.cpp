@@ -49,6 +49,7 @@ void DelayTab::createLayout()
     radiobutton_create(delayTypeSelector, "Ping-Pong");
     radiobutton_create(delayTypeSelector, "Circular");
     lv_obj_add_state(lv_obj_get_child(delayTypeSelector, delaySettings->delayMode), LV_STATE_CHECKED);
+    _modeInfo.param = delaySettings->delayMode;
 
     lv_obj_t * sub_params_page = lv_menu_page_create(menu, NULL);
     lv_obj_set_style_pad_hor(sub_params_page, lv_obj_get_style_pad_left(lv_menu_get_main_header(menu), 0), 0);

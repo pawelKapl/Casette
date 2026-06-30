@@ -10,6 +10,7 @@ static void onSubAmpModelPicked(lv_event_t *e);
 static void onAmpSliderMoved(lv_event_t *e);
 static void onTonestackKnobMoved(lv_event_t *e);
 static void onTonestackPowerClicked(lv_event_t *e);
+static void radioEventHandler(lv_event_t * e);
 
 
 lv_obj_t * AmpTab::levelMeter(lv_obj_t * parent, const char * title)
@@ -39,7 +40,7 @@ void AmpTab::createLayout()
 {
     lv_obj_t *menu = lv_menu_create(_tab);
     auto ampSettings = _amp->ampSettings();
-
+    
     lv_color_t bg_color = lv_obj_get_style_bg_color(menu, 0);
     if (lv_color_brightness(bg_color) > 127)
     {
@@ -54,19 +55,16 @@ void AmpTab::createLayout()
     lv_obj_set_size(menu, lv_display_get_horizontal_resolution(NULL) - 80, lv_display_get_vertical_resolution(NULL));
     lv_obj_center(menu);
     resize_back_button(menu);
-
+    
     lv_obj_t *cont;
     lv_obj_t *section;
-
+    
     lv_obj_t *root_page = lv_menu_page_create(menu, "Amp Settings");
     lv_obj_set_style_pad_hor(root_page, lv_obj_get_style_pad_left(lv_menu_get_main_header(menu), 0), 0);
     section = lv_menu_section_create(root_page);
-
-    cont = create_switch(section, LV_SYMBOL_POWER, "Main Amp Enabled", ampSettings->ampEnabled);
-    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onAmpButtonPowerClicked, LV_EVENT_VALUE_CHANGED, this);
-
+    
     auto modelsPath = std::string("../models/");
-
+    
     std::string models;
     int index = 0;
     int pickedOne = 0;
@@ -75,66 +73,86 @@ void AmpTab::createLayout()
     {
         std::string filename = file.path().stem();
         if (filename == ampSettings->model)
-            pickedOne = index;
+        pickedOne = index;
         if (filename == ampSettings->subModel)
-            pickedSubOne = index;
+        pickedSubOne = index;
         models += filename;
         models += "\n";
         index++;
     }
     if (!models.empty())
-        models.pop_back();
-
-    cont = lv_menu_cont_create(section);
-    lv_obj_t *ampSelector = lv_dropdown_create(cont);
-    lv_obj_set_flex_grow(ampSelector, 1);
-    lv_obj_set_style_text_color(ampSelector, lv_color_make(224, 26, 79), LV_PART_INDICATOR);
-
-    lv_dropdown_set_options(ampSelector, models.c_str());
-    lv_dropdown_set_selected(ampSelector, pickedOne, NULL);
-
-    lv_obj_add_flag(ampSelector, LV_OBJ_FLAG_FLEX_IN_NEW_TRACK);
-    lv_obj_set_flex_grow(ampSelector, 1);
-    lv_obj_align(ampSelector, LV_ALIGN_BOTTOM_LEFT, 0, 20);
-    lv_obj_add_event_cb(ampSelector, onAmpModelPicked, LV_EVENT_ALL, this);
-
-    section = lv_menu_section_create(root_page);
-    lv_obj_set_style_margin_top(section, 20, 0);
+    models.pop_back();
 
     cont = create_switch(section, LV_SYMBOL_POWER, "Front Amp Enabled", ampSettings->subAmpEnabled);
     lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onSubAmpButtonPowerClicked, LV_EVENT_VALUE_CHANGED, this);
-
+    
     lv_obj_t *subAmpSelector = lv_dropdown_create(cont);
     lv_obj_set_flex_grow(subAmpSelector, 1);
     lv_obj_set_style_text_color(subAmpSelector, lv_color_make(224, 26, 79), LV_PART_INDICATOR);
-
+    
     lv_dropdown_set_options(subAmpSelector, models.c_str());
     lv_dropdown_set_selected(subAmpSelector, pickedSubOne, NULL);
-
+    
     lv_obj_add_flag(subAmpSelector, LV_OBJ_FLAG_FLEX_IN_NEW_TRACK);
     lv_obj_set_flex_grow(subAmpSelector, 1);
     lv_obj_align(subAmpSelector, LV_ALIGN_BOTTOM_LEFT, 0, 30);
     lv_obj_add_event_cb(subAmpSelector, onSubAmpModelPicked, LV_EVENT_ALL, this);
 
-    char buf[8];
-
+    cont = create_switch(section, LV_SYMBOL_POWER, "Main Amp Enabled", ampSettings->ampEnabled);
+    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onAmpButtonPowerClicked, LV_EVENT_VALUE_CHANGED, this);
+    
+    cont = lv_menu_cont_create(section);
+    
+    lv_obj_t *ampSelector = lv_dropdown_create(cont);
+    lv_obj_set_flex_grow(ampSelector, 1);
+    lv_obj_set_style_text_color(ampSelector, lv_color_make(224, 26, 79), LV_PART_INDICATOR);
+    
+    lv_dropdown_set_options(ampSelector, models.c_str());
+    lv_dropdown_set_selected(ampSelector, pickedOne, NULL);
+    
+    lv_obj_add_flag(ampSelector, LV_OBJ_FLAG_FLEX_IN_NEW_TRACK);
+    lv_obj_set_flex_grow(ampSelector, 1);
+    lv_obj_align(ampSelector, LV_ALIGN_BOTTOM_LEFT, 0, 20);
+    lv_obj_add_event_cb(ampSelector, onAmpModelPicked, LV_EVENT_ALL, this);
+    
     auto subMode = ampSettings->subMode;
     int subModePos = subMode == "PARALLEL" ? 0 : 1;
-    cont = create_slider(section, LV_SYMBOL_EDIT, "Front Amp Wiring Mode", 0, 1, subModePos, subMode.c_str());
-    lv_obj_set_user_data(lv_obj_get_child(cont, 2), &_subModeInfo);
-    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onAmpSliderMoved, LV_EVENT_VALUE_CHANGED, NULL);
-
+    _subModeInfo.param = subModePos;
+    
+    section = lv_menu_section_create(root_page);
+    lv_obj_set_size(section, lv_pct(100), lv_pct(55));
+    create_text(section, LV_SYMBOL_SETTINGS, "Amp wiring type: ", LV_MENU_ITEM_BUILDER_VARIANT_1);
+    
+    
+    lv_obj_t * ampWiringSelector = lv_obj_create(section);
+    static lv_style_t noFrame;
+    lv_style_init(&noFrame);
+    lv_style_set_border_width(&noFrame, 0);
+    lv_obj_add_style(ampWiringSelector, &noFrame, 0);
+    lv_obj_set_flex_flow(ampWiringSelector, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_size(ampWiringSelector, lv_pct(50), lv_pct(40));
+    lv_obj_add_event_cb(ampWiringSelector, radioEventHandler, LV_EVENT_CLICKED, &_subModeInfo);
+    radiobutton_create(ampWiringSelector, "PARALLEL");
+    radiobutton_create(ampWiringSelector, "SERIES");
+    
+    lv_obj_add_state(lv_obj_get_child(ampWiringSelector, subModePos), LV_STATE_CHECKED);
+    
+    char buf[8];
     auto subBlend = ampSettings->subBlend;
     int subBlendPos = subBlend * 100;
     lv_snprintf(buf, sizeof(buf), "%d%%", subBlendPos);
     cont = create_slider(section, LV_SYMBOL_EDIT, "Front Amp Parallel Blend", 0, 100, subBlendPos, buf);
     lv_obj_set_user_data(lv_obj_get_child(cont, 2), &_subBlendInfo);
     lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onAmpSliderMoved, LV_EVENT_VALUE_CHANGED, NULL);
-
-
+    _blendSlider = cont;
+    
+    if (subMode != "PARALLEL")
+    {
+        lv_obj_add_flag(_blendSlider, LV_OBJ_FLAG_HIDDEN);
+    }
+    
     section = lv_menu_section_create(root_page);
-    lv_obj_set_style_margin_top(section, 30, 0);
-
+    
     float inputGain = ampSettings->inputGain;
     int inputGainPos = dbToPosition(inputGain) * 100;
     inputGain = std::round(inputGain * 10.0f) / 10.0f;
@@ -160,7 +178,6 @@ void AmpTab::createLayout()
     cont = create_switch(section, LV_SYMBOL_POWER, "Tonestack Enabled", ampSettings->tonestackEnabled);
     lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onTonestackPowerClicked, LV_EVENT_VALUE_CHANGED, this);
 
-    static lv_style_t noFrame;
     lv_style_init(&noFrame);
     lv_style_set_border_width(&noFrame, 0);
 
@@ -310,6 +327,33 @@ static void onSubAmpModelPicked(lv_event_t *e)
     }
 }
 
+static void radioEventHandler(lv_event_t * e)
+{
+    AmpControlInfo * data = static_cast<AmpControlInfo*>(lv_event_get_user_data(e));
+    lv_obj_t * cont = (lv_obj_t *)lv_event_get_current_target(e);
+    lv_obj_t * act_cb = lv_event_get_target_obj(e);
+    lv_obj_t * old_cb = lv_obj_get_child(cont, data->param);
+
+    if(act_cb == cont) return;
+
+    lv_obj_remove_state(old_cb, LV_STATE_CHECKED);
+    lv_obj_add_state(act_cb, LV_STATE_CHECKED);
+
+    auto mode = lv_obj_get_index(act_cb) == 0 ? "PARALLEL" : "SERIES";
+
+    if (mode == "PARALLEL")
+    {
+        lv_obj_remove_flag(data->tabRef->_blendSlider, LV_OBJ_FLAG_HIDDEN);
+    }
+    else
+    {
+        lv_obj_add_flag(data->tabRef->_blendSlider, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    data->param = lv_obj_get_index(act_cb);
+    data->ampRef->setSubMode(mode);
+}
+
 static void onAmpSliderMoved(lv_event_t *e)
 {
     lv_obj_t *slider = lv_event_get_target_obj(e);
@@ -320,15 +364,6 @@ static void onAmpSliderMoved(lv_event_t *e)
         data->ampRef->setInputGain(positionToDb((float)lv_slider_get_value(slider) / 100.0f, -50.0f, 12.0f));
     else if (data->param == 3)
         data->ampRef->setMVGain(positionToDb((float)lv_slider_get_value(slider) / 100.0f, -50.0f, 12.0f));
-    else if (data->param == 7)
-    {
-        auto mode = lv_slider_get_value(slider) == 0 ? "PARALLEL" : "SERIES";
-        data->ampRef->setSubMode(mode);
-        lv_obj_t * parent = lv_obj_get_parent(slider);
-        lv_obj_t * label = lv_obj_get_child(parent, 3);
-        lv_label_set_text(label, mode);
-        lv_obj_align_to(label, parent, LV_ALIGN_CENTER, 0, 0);
-    }
 }
 
 static void onTonestackKnobMoved(lv_event_t *e)
