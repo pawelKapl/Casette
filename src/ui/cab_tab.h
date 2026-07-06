@@ -35,4 +35,5 @@ public:
         CabSimulator *_cab;
 
         CabControlInfo _hiPassInfo{_cab, 5};
+        CabControlInfo _loPassInfo{_cab, 6};
 };

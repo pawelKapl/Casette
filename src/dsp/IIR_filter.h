@@ -77,3 +77,20 @@ private:
     HiPassFilterParams _params;
 
 }; // HiPassFilter
+
+struct LoPassFilterParams
+{
+    float sampleRate;
+    float frequency;
+};
+
+class LoPassFilter : public BaseIIRFilter
+{
+public:
+  LoPassFilter() : BaseIIRFilter(2, 2) {}
+  void setParams(const LoPassFilterParams &params);
+
+private:
+    LoPassFilterParams _params;
+
+}; // LoPassFilter

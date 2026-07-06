@@ -151,3 +151,17 @@ void HiPassFilter::setParams(const HiPassFilterParams &params)
     _outputCoefficients[0] = 1.0f;
     _outputCoefficients[1] = -alpha;
 }
+
+void LoPassFilter::setParams(const LoPassFilterParams &params)
+{
+    _params = params;
+
+    const float c = 2.0f * M_PI * params.frequency / params.sampleRate;
+    const float alpha = 1.0f / (c + 1.0f);
+
+    _inputCoefficients[0] = 1.0f - alpha;
+    _inputCoefficients[1] = 0.0f;
+
+    _outputCoefficients[0] = 1.0f;
+    _outputCoefficients[1] = -alpha;
+}

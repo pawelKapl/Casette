@@ -68,6 +68,11 @@ void CabTab::createLayout()
     lv_obj_set_user_data(lv_obj_get_child(cont, 2), &_hiPassInfo);
     lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onCabSliderMoved, LV_EVENT_VALUE_CHANGED, NULL);
 
+    lv_snprintf(buf, sizeof(buf), "%dHz", cabSettings->loPass);
+    cont = create_slider(section, LV_SYMBOL_SETTINGS, "Low Pass", 1000, 16000, cabSettings->loPass, buf);
+    lv_obj_set_user_data(lv_obj_get_child(cont, 2), &_loPassInfo);
+    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onCabSliderMoved, LV_EVENT_VALUE_CHANGED, NULL);
+
     lv_menu_set_sidebar_page(menu, NULL);
     lv_menu_set_page(menu, root_page);
 }
@@ -117,5 +122,8 @@ static void onCabSliderMoved(lv_event_t *e)
 {
     lv_obj_t *slider = lv_event_get_target_obj(e);
     CabControlInfo *data = static_cast<CabControlInfo*>(lv_obj_get_user_data(slider));
-    data->cabRef->setHighPassFrequency(lv_slider_get_value(slider)); 
+    if (data->param == 5)
+        data->cabRef->setHighPassFrequency(lv_slider_get_value(slider)); 
+    else if (data->param == 6)
+        data->cabRef->setLowPassFrequency(lv_slider_get_value(slider)); 
 }

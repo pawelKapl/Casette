@@ -14,12 +14,16 @@ void CabSimulator::reload()
         _settings = *persistedSettings;
     }
 
-    HiPassFilterParams cabFilterParams;
-    cabFilterParams.sampleRate = 48000;
-    cabFilterParams.frequency = _settings.hiPass;
+    HiPassFilterParams cabHiFilterParams;
+    cabHiFilterParams.sampleRate = 48000;
+    cabHiFilterParams.frequency = _settings.hiPass;
 
-    _cabPostFilter.setParams(cabFilterParams);
+    LoPassFilterParams cabLoFilterParams;
+    cabLoFilterParams.sampleRate = 48000;
+    cabLoFilterParams.frequency = _settings.loPass;
 
+    _cabPostHiPassFilter.setParams(cabHiFilterParams);
+    _cabPostLoPassFilter.setParams(cabLoFilterParams);
 
     _enabled = _settings.enabled;
     loadIr(_settings.model);
@@ -31,7 +35,11 @@ void CabSimulator::process(const float* in, float* out, size_t frames)
     {
         _conv->process(in, out, frames);
         for (int i = 0; i < frames; i++)
-            out[i] = _cabPostFilter.processSample(out[i]);
+        {
+            out[i] = _cabPostHiPassFilter.processSample(out[i]);
+            out[i] = _cabPostLoPassFilter.processSample(out[i]);
+
+        }
     }
 }
 
@@ -59,6 +67,18 @@ void CabSimulator::setHighPassFrequency(int frequency)
     cabFilterParams.sampleRate = 48000;
     cabFilterParams.frequency = _settings.hiPass;
 
-    _cabPostFilter.setParams(cabFilterParams);
+    _cabPostHiPassFilter.setParams(cabFilterParams);
+    Storage::get().persist<CabSimulatorSettings>(_settings, "cab");
+}
+
+void CabSimulator::setLowPassFrequency(int frequency)
+{
+    _settings.loPass = frequency;
+
+    LoPassFilterParams cabFilterParams;
+    cabFilterParams.sampleRate = 48000;
+    cabFilterParams.frequency = _settings.loPass;
+
+    _cabPostLoPassFilter.setParams(cabFilterParams);
     Storage::get().persist<CabSimulatorSettings>(_settings, "cab");
 }
