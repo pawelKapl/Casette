@@ -127,7 +127,8 @@ void Amp::process(const float *input, float *output, const size_t numFrames)
     for (int i = 0; i < numFrames; i++)
     {
         subOutput[i] = input[i] * _inputGainAmp * _subInputCorrection;
-        output[i] = input[i] * _inputGainAmp * _inputCorrection;
+        output[i] = input[i] * _inputGainAmp;
+        if (_enabled) output[i] = output[i] * _inputCorrection;
         if (std::abs(output[i]) > inMax)
             inMax = std::abs(output[i]);
     }
@@ -205,7 +206,7 @@ void Amp::performanceScaling()
             counter = 0;
         }
 
-        if (counter > 250)
+        if (counter > 200)
         {
             counter = 0;
             _subQualityDowngraded = true;
