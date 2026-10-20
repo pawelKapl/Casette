@@ -64,11 +64,11 @@ public:
   }
 
 private:
-  t_float _phase;
-  t_float _freq;
-  t_float _range;
-  t_float _finalRange;
-  t_float _randomness;
-  t_float _samplingFrequency;
-  t_float _increment;
+  t_float _phase = 0;
+  t_float _freq = 0;
+  t_float _range = 0;
+  t_float _finalRange = 0;
+  t_float _randomness = 0;
+  t_float _samplingFrequency = 48000;
+  t_float _increment = 0;
 };

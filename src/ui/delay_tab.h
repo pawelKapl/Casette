@@ -27,6 +27,7 @@ public:
     }
 
     void handleDelayPower(lv_event_t * e);
+    void handleReverseWetOnly(lv_event_t * e);
     void createLayout();
 
     private:

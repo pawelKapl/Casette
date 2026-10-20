@@ -20,7 +20,7 @@ void CabTab::createLayout()
     }
     lv_menu_set_mode_root_back_button(menu, LV_MENU_ROOT_BACK_BUTTON_ENABLED);
     lv_obj_add_event_cb(menu, backEventHandler, LV_EVENT_CLICKED, menu);
-    lv_obj_set_size(menu, lv_display_get_horizontal_resolution(NULL) - 80, lv_display_get_vertical_resolution(NULL));
+    lv_obj_set_size(menu, lv_pct(100), lv_pct(100));
     lv_obj_center(menu);
     resize_back_button(menu);
 

@@ -108,7 +108,7 @@ static void update_slider_value_db(lv_event_t * e)
 
     auto sliderPos = (float)lv_slider_get_value(slider) / 100.0f;
     float dB = positionToDb(sliderPos, -50.0f, 12.0f);
-    float dB_rounded = std::round(dB * 10.0f) / 12.0f;
+    float dB_rounded = std::round(dB * 10.0f) / 10.0f;
 
     char buf[8];
     std::snprintf(buf, sizeof(buf), "%+.1fdB", dB_rounded);
@@ -184,6 +184,7 @@ static lv_obj_t * create_slider(lv_obj_t * parent, const char * icon, const char
     lv_obj_set_flex_grow(slider, 1);
     lv_slider_set_range(slider, min, max);
     lv_slider_set_value(slider, val, LV_ANIM_OFF);
+    lv_obj_set_ext_click_area(slider, 14);
 
     if(icon == NULL) {
         lv_obj_add_flag(slider, LV_OBJ_FLAG_FLEX_IN_NEW_TRACK);
@@ -191,6 +192,8 @@ static lv_obj_t * create_slider(lv_obj_t * parent, const char * icon, const char
 
     auto slider_label = lv_label_create(obj);
     lv_label_set_text(slider_label, unit);
+    lv_obj_set_width(slider_label, 96);
+    lv_obj_set_style_text_align(slider_label, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_align_to(slider_label, obj, LV_ALIGN_CENTER, 0, 0);
 
     lv_event_cb_t handler;
@@ -230,8 +233,9 @@ static lv_obj_t * create_switch(lv_obj_t * parent, const char * icon, const char
     lv_obj_t * obj = create_text(parent, icon, txt, LV_MENU_ITEM_BUILDER_VARIANT_1);
 
     lv_obj_t * sw = lv_switch_create(obj);
-    lv_obj_set_height(sw, 22);
-    lv_obj_set_width(sw, 45);
+    lv_obj_set_height(sw, 26);
+    lv_obj_set_width(sw, 52);
+    lv_obj_set_ext_click_area(sw, 12);
     lv_obj_add_state(sw, chk ? LV_STATE_CHECKED : 0);
 
     return obj;
@@ -260,7 +264,8 @@ static lv_obj_t * create_knob(lv_obj_t * parent, const char * txt, int32_t min, 
     
     lv_obj_t * cont = lv_obj_create(parent);
     lv_obj_add_style(cont, &noFrame, 0);
-    lv_obj_set_size(cont, 215, 170);
+    lv_obj_set_size(cont, lv_pct(30), LV_SIZE_CONTENT);
+    lv_obj_remove_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_flex_flow(cont, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(cont, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 

@@ -18,6 +18,7 @@ t_float *Delay::init(t_float *memory)
     currentPtr = initSingleDelay(&_dualTapDelays[i], currentPtr);
   for (int i = 0; i < 1; i++)
     currentPtr = initSingleDelay(&_generalDelay[i], currentPtr);
+  currentPtr = initSingleDelay(&_reverseDelay, currentPtr);
 
   _diffuserL.init(_samplingFrequency);
   _diffuserR.init( _samplingFrequency);
@@ -47,6 +48,11 @@ void Delay::clear()
     clearSingleDelay(&_dualTapDelays[i]);
   for (int i = 0; i < 1; i++)
     clearSingleDelay(&_generalDelay[i]);
+  clearSingleDelay(&_reverseDelay);
+
+  _grains[0] = {};
+  _grains[1] = {};
+  _reversePhase = 0;
 }
 
 void Delay::clearSingleDelay(SingleDelay *delay)
@@ -76,6 +82,83 @@ void Delay::process(const t_float* const* input, t_float** output, int frames, i
   case TAPE:
     singleDelay(input, output, MONO, frames, 0, 0, inChannels, outChannels);
     break;
+  case REVERSE:
+    reverseDelay(input, output, frames, inChannels, outChannels);
+    break;
+  }
+}
+
+void Delay::startGrain(ReverseGrain &grain)
+{
+  // start at the newest recorded sample and walk backwards from there
+  grain.start = (_reverseDelay.writeHead - 1 + BUFFER_SIZE) % BUFFER_SIZE;
+  grain.pos = 0;
+  grain.length = _reverseLength;
+  grain.active = true;
+}
+
+void Delay::reverseDelay(const t_float* const* input, t_float** output, int frames, int inChannels, int outChannels)
+{
+  SingleDelay *delay = &_reverseDelay;
+
+  for (int i = 0; i < frames; i++)
+  {
+    t_float inputSample = 0;
+    if (inChannels == 2)
+      inputSample = (input[0][i] * 0.5f) + (input[1][i] * 0.5f);
+    else
+      inputSample = input[0][i];
+
+    if (_reversePhase == 0)
+    {
+      _reverseLength = delay->bufferLength;
+      startGrain(_grains[0]);
+    }
+    if (_reversePhase == _reverseLength / 2)
+      startGrain(_grains[1]);
+
+    _reversePhase = (_reversePhase + 1) % _reverseLength;
+
+    t_float delayedSample = 0;
+    for (auto &grain : _grains)
+    {
+      if (!grain.active)
+        continue;
+
+      int index = (grain.start - grain.pos + BUFFER_SIZE) % BUFFER_SIZE;
+      t_float w = std::sin(M_PI * grain.pos / grain.length);
+      delayedSample += delay->buffer[index] * w * w;
+
+      if (++grain.pos >= grain.length)
+        grain.active = false;
+    }
+
+    t_float feedbackSample = delayedSample;
+
+    delay->hiPassFilter.filter(feedbackSample, &feedbackSample);
+    delay->lowPassFilter.filter(feedbackSample, &feedbackSample);
+
+    delay->buffer[delay->writeHead] = inputSample + feedbackSample * delay->feedbackLevel;
+    delay->writeHead = (delay->writeHead + 1) % BUFFER_SIZE;
+
+    t_float out = delayedSample * _delayMix;
+    if (_diffusion) _diffuserC1.process(out, out);
+
+    t_float modifier = outChannels > 1 ? 0.95f : 1.0f;
+    if (_reverseWetOnly)
+    {
+      output[0][i] = out * modifier;
+      if (outChannels > 1) output[1][i] = out * modifier;
+    }
+    else
+    {
+      output[0][i] += out * modifier;
+      if (outChannels > 1) output[1][i] += out * modifier;
+    }
+
+    normalize(&output[0][i]);
+    if (outChannels > 1)
+      normalize(&output[1][i]);
   }
 }
 
@@ -98,6 +181,8 @@ void Delay::singleDelay(const t_float* const* input, t_float** output, DelayMode
   case PING_PONG:
     delay = &_circularDelays[delayIndex];
     break;
+  case REVERSE:
+    return; // handled by reverseDelay
   }
 
   for (int i = 0; i < frames; i++)
@@ -202,6 +287,10 @@ void Delay::recalculate()
 
   _generalDelay[0].bufferLength = std::clamp(int(_baseTime * _samplingFrequency), 1, BUFFER_SIZE - 2);
   _generalDelay[0].feedbackLevel = _feedbackLvl;
+
+  // a grain reads up to 2x its length behind the write head
+  _reverseDelay.bufferLength = std::clamp(int(_baseTime * _samplingFrequency), 2, BUFFER_SIZE / 2 - 1);
+  _reverseDelay.feedbackLevel = _feedbackLvl;
 }
 
 void Delay::setHighPass(int freq)
@@ -212,6 +301,7 @@ void Delay::setHighPass(int freq)
     _dualTapDelays[i].hiPassFilter.setCutOff(freq, _samplingFrequency);
   for (int i = 0; i < 1; i++)
     _generalDelay[i].hiPassFilter.setCutOff(freq, _samplingFrequency);
+  _reverseDelay.hiPassFilter.setCutOff(freq, _samplingFrequency);
 }
 
 void Delay::setLowPass(int freq)
@@ -222,4 +312,5 @@ void Delay::setLowPass(int freq)
     _dualTapDelays[i].lowPassFilter.setCutOff(freq, _samplingFrequency);
   for (int i = 0; i < 1; i++)
     _generalDelay[i].lowPassFilter.setCutOff(freq, _samplingFrequency);
+  _reverseDelay.lowPassFilter.setCutOff(freq, _samplingFrequency);
 }

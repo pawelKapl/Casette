@@ -141,27 +141,26 @@ void BiQuadFilter::setGain(float gainDB)
 void HiPassFilter::setParams(const HiPassFilterParams &params)
 {
     _params = params;
-    
-    const float c = 2.0f * M_PI * params.frequency / params.sampleRate;
-    const float alpha = 1.0f / (c + 1.0f);
 
-    _inputCoefficients[0] = alpha;
-    _inputCoefficients[1] = -alpha;
+    const float K = onePoleK(params.frequency, params.sampleRate);
+
+    _inputCoefficients[0] = 1.0f / (1.0f + K);
+    _inputCoefficients[1] = -1.0f / (1.0f + K);
 
     _outputCoefficients[0] = 1.0f;
-    _outputCoefficients[1] = -alpha;
+    _outputCoefficients[1] = (K - 1.0f) / (K + 1.0f);
 }
 
 void LoPassFilter::setParams(const LoPassFilterParams &params)
 {
     _params = params;
 
-    const float c = 2.0f * M_PI * params.frequency / params.sampleRate;
-    const float alpha = 1.0f / (c + 1.0f);
+    // bilinear transform with prewarping, -3dB lands exactly on the cutoff
+    const float K = onePoleK(params.frequency, params.sampleRate);
 
-    _inputCoefficients[0] = 1.0f - alpha;
-    _inputCoefficients[1] = 0.0f;
+    _inputCoefficients[0] = K / (1.0f + K);
+    _inputCoefficients[1] = K / (1.0f + K);
 
     _outputCoefficients[0] = 1.0f;
-    _outputCoefficients[1] = -alpha;
+    _outputCoefficients[1] = (K - 1.0f) / (K + 1.0f);
 }

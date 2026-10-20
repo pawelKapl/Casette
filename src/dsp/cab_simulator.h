@@ -23,10 +23,10 @@ inline void to_json(nlohmann::json& j, const CabSimulatorSettings& a) {
 }
 
 inline void from_json(const nlohmann::json& j, CabSimulatorSettings& a) {
-    j.at("model").get_to(a.model);
-    j.at("enabled").get_to(a.enabled);
-    j.at("hiPass").get_to(a.hiPass);
-    a.loPass = j.value("loPass", 16000);
+    a.model = j.value("model", a.model);
+    a.enabled = j.value("enabled", a.enabled);
+    a.hiPass = j.value("hiPass", a.hiPass);
+    a.loPass = j.value("loPass", a.loPass);
 }
 
 class CabSimulator

@@ -19,6 +19,7 @@ public:
   {
     _lfoL.setRangeMs(depth);
     _lfoR.setRangeMs(depth);
+    updateBaseDelay(_samplingFrequency * depth / 1000.0f);
   }
 
   inline void setRate(t_float rate)
@@ -58,9 +59,14 @@ private:
 
   bool _vibratoMode = false;
 
+  // peak of fast_sin over [-pi, pi]
+  static constexpr float LFO_PEAK = 1.21f;
+  float _baseDelay = 0.0f;
+
   LFO _lfoL;
   LFO _lfoR;
 
   float readDelay(const std::vector<t_float> &buffer, t_float delaySamples);
+  void updateBaseDelay(float depthSamples);
 
 };

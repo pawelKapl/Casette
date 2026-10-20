@@ -22,18 +22,19 @@ void Reverb::process(const t_float* const* input, t_float** output, int frames, 
   {
     for (int i = 0; i < frames; i++)
     {
-      t_float inputSample = input[c][i];
+      t_float drySample = input[c][i];
+      t_float sendSample = drySample;
 
-      _hiPassFilter[c].filter(inputSample, &inputSample);
-      _lowPassFilter[c].filter(inputSample, &inputSample);
+      _hiPassFilter[c].filter(sendSample, &sendSample);
+      _lowPassFilter[c].filter(sendSample, &sendSample);
 
-      float wet = _roomReverb[c].process(inputSample);
+      float wet = _roomReverb[c].process(sendSample);
 
       float wetGain = std::sqrt(_reverbMix);
       float dryGain = std::sqrt(1.0f - _reverbMix);
 
       output[c][i] =
-          inputSample * dryGain +
+          drySample * dryGain +
           wet * wetGain;
     }  
   }

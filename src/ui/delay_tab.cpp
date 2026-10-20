@@ -5,6 +5,7 @@ static void backEventHandler(lv_event_t * e);
 static void onDelayButtonPowerClicked(lv_event_t * e);
 static void onDelaySliderMoved(lv_event_t * e);
 static void radioEventHandler(lv_event_t * e);
+static void onReverseWetOnlyClicked(lv_event_t * e);
 
 void DelayTab::createLayout()
 {
@@ -20,7 +21,7 @@ void DelayTab::createLayout()
     }
     lv_menu_set_mode_root_back_button(menu, LV_MENU_ROOT_BACK_BUTTON_ENABLED);
     lv_obj_add_event_cb(menu, backEventHandler, LV_EVENT_CLICKED, menu);
-    lv_obj_set_size(menu, lv_display_get_horizontal_resolution(NULL) - 80, lv_display_get_vertical_resolution(NULL));
+    lv_obj_set_size(menu, lv_pct(100), lv_pct(100));
     lv_obj_center(menu);
     resize_back_button(menu);
 
@@ -28,11 +29,10 @@ void DelayTab::createLayout()
     lv_obj_t * section;
 
     /*Create sub pages*/
-    lv_obj_t * sub_type_page = lv_menu_page_create(menu, NULL);
+    lv_obj_t * sub_type_page = lv_menu_page_create(menu, "Delay Type");
     lv_obj_set_style_pad_hor(sub_type_page, lv_obj_get_style_pad_left(lv_menu_get_main_header(menu), 0), 0);
     lv_menu_separator_create(sub_type_page);
     section = lv_menu_section_create(sub_type_page);
-    lv_obj_set_size(section, lv_pct(100), lv_pct(75));
     create_text(section, LV_SYMBOL_SETTINGS, "Delay type: ", LV_MENU_ITEM_BUILDER_VARIANT_1);
 
     lv_obj_t * delayTypeSelector = lv_obj_create(section);
@@ -41,17 +41,19 @@ void DelayTab::createLayout()
     lv_style_set_border_width(&noFrame, 0);
     lv_obj_add_style(delayTypeSelector, &noFrame, 0);
     lv_obj_set_flex_flow(delayTypeSelector, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_size(delayTypeSelector, lv_pct(50), lv_pct(80));
+    lv_obj_set_size(delayTypeSelector, lv_pct(100), LV_SIZE_CONTENT);
+    lv_obj_remove_flag(delayTypeSelector, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_event_cb(delayTypeSelector, radioEventHandler, LV_EVENT_CLICKED, &_modeInfo);
     radiobutton_create(delayTypeSelector, "Mono");
     radiobutton_create(delayTypeSelector, "Tape");
     radiobutton_create(delayTypeSelector, "Dual Tap");
     radiobutton_create(delayTypeSelector, "Ping-Pong");
     radiobutton_create(delayTypeSelector, "Circular");
+    radiobutton_create(delayTypeSelector, "Reverse");
     lv_obj_add_state(lv_obj_get_child(delayTypeSelector, delaySettings->delayMode), LV_STATE_CHECKED);
     _modeInfo.param = delaySettings->delayMode;
 
-    lv_obj_t * sub_params_page = lv_menu_page_create(menu, NULL);
+    lv_obj_t * sub_params_page = lv_menu_page_create(menu, "Delay Params");
     lv_obj_set_style_pad_hor(sub_params_page, lv_obj_get_style_pad_left(lv_menu_get_main_header(menu), 0), 0);
     lv_menu_separator_create(sub_params_page);
     section = lv_menu_section_create(sub_params_page);
@@ -87,7 +89,7 @@ void DelayTab::createLayout()
     lv_obj_set_user_data(lv_obj_get_child(cont, 2), &_modRateInfo);
     lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onDelaySliderMoved, LV_EVENT_VALUE_CHANGED, NULL);
 
-    lv_obj_t * sub_eq_page = lv_menu_page_create(menu, NULL);
+    lv_obj_t * sub_eq_page = lv_menu_page_create(menu, "Delay Equalization");
     lv_obj_set_style_pad_hor(sub_eq_page, lv_obj_get_style_pad_left(lv_menu_get_main_header(menu), 0), 0);
     lv_menu_separator_create(sub_eq_page);
     section = lv_menu_section_create(sub_eq_page);
@@ -114,6 +116,9 @@ void DelayTab::createLayout()
     cont = create_text(section, LV_SYMBOL_SETTINGS, "Equalization", LV_MENU_ITEM_BUILDER_VARIANT_1);
     lv_menu_set_load_page_event(menu, cont, sub_eq_page);
 
+    cont = create_switch(section, LV_SYMBOL_LOOP, "Reverse: Wet Only", delaySettings->reverseWetOnly);
+    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onReverseWetOnlyClicked, LV_EVENT_VALUE_CHANGED, this);
+
     lv_menu_set_sidebar_page(menu, NULL);
     lv_menu_set_page(menu, root_page);
 }
@@ -122,6 +127,12 @@ static void onDelayButtonPowerClicked(lv_event_t * e)
 {
     auto* self = static_cast<DelayTab*>(lv_event_get_user_data(e));
     self->handleDelayPower(e);
+}
+
+static void onReverseWetOnlyClicked(lv_event_t * e)
+{
+    auto* self = static_cast<DelayTab*>(lv_event_get_user_data(e));
+    self->handleReverseWetOnly(e);
 }
 
 static void onDelaySliderMoved(lv_event_t *e)
@@ -161,5 +172,14 @@ void DelayTab::handleDelayPower(lv_event_t * e)
     {
         lv_obj_t * obj = lv_event_get_target_obj(e);
         _fxChain->enableDelay(lv_obj_has_state(obj, LV_STATE_CHECKED));
+    }
+}
+
+void DelayTab::handleReverseWetOnly(lv_event_t * e)
+{
+    if(lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED)
+    {
+        lv_obj_t * obj = lv_event_get_target_obj(e);
+        _fxChain->adjustDelayParam(10, lv_obj_has_state(obj, LV_STATE_CHECKED));
     }
 }

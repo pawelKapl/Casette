@@ -12,6 +12,7 @@ struct DelaySettings
 	int diffusion = 65;
 	int modRate = 1;
 	int enabled = false;
+	int reverseWetOnly = false;
 
 	int* getParam(int index)
 	{
@@ -37,6 +38,8 @@ struct DelaySettings
 				return &modRate;
 			case 9:
 				return &enabled;
+			case 10:
+				return &reverseWetOnly;
 			default:
 				return nullptr;
 		}
@@ -55,20 +58,22 @@ inline void to_json(nlohmann::json& j, const DelaySettings& d)
         {"loPass", d.loPass},
         {"diffusion", d.diffusion},
         {"modRate", d.modRate},
-        {"enabled", d.enabled}
+        {"enabled", d.enabled},
+        {"reverseWetOnly", d.reverseWetOnly}
     };
 }
 
 inline void from_json(const nlohmann::json& j, DelaySettings& d) 
 {
-    j.at("delayMode").get_to(d.delayMode);
-    j.at("mix").get_to(d.mix);
-    j.at("feedback").get_to(d.feedback);
-    j.at("time").get_to(d.time);
-    j.at("time2").get_to(d.time2);
-    j.at("hiPass").get_to(d.hiPass);
-    j.at("loPass").get_to(d.loPass);
-    j.at("diffusion").get_to(d.diffusion);
-    j.at("modRate").get_to(d.modRate);
-    j.at("enabled").get_to(d.enabled);
+    d.delayMode = j.value("delayMode", d.delayMode);
+    d.mix = j.value("mix", d.mix);
+    d.feedback = j.value("feedback", d.feedback);
+    d.time = j.value("time", d.time);
+    d.time2 = j.value("time2", d.time2);
+    d.hiPass = j.value("hiPass", d.hiPass);
+    d.loPass = j.value("loPass", d.loPass);
+    d.diffusion = j.value("diffusion", d.diffusion);
+    d.modRate = j.value("modRate", d.modRate);
+    d.enabled = j.value("enabled", d.enabled);
+    d.reverseWetOnly = j.value("reverseWetOnly", d.reverseWetOnly);
 }

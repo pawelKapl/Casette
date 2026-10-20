@@ -52,7 +52,7 @@ void AmpTab::createLayout()
     }
     lv_menu_set_mode_root_back_button(menu, LV_MENU_ROOT_BACK_BUTTON_ENABLED);
     lv_obj_add_event_cb(menu, backEventHandler, LV_EVENT_CLICKED, menu);
-    lv_obj_set_size(menu, lv_display_get_horizontal_resolution(NULL) - 80, lv_display_get_vertical_resolution(NULL));
+    lv_obj_set_size(menu, lv_pct(100), lv_pct(100));
     lv_obj_center(menu);
     resize_back_button(menu);
     
@@ -97,12 +97,14 @@ void AmpTab::createLayout()
     lv_obj_set_flex_grow(subAmpSelector, 1);
     lv_obj_align(subAmpSelector, LV_ALIGN_BOTTOM_LEFT, 0, 30);
     lv_obj_add_event_cb(subAmpSelector, onSubAmpModelPicked, LV_EVENT_ALL, this);
+    _subAmpSelector = subAmpSelector;
 
     cont = create_switch(section, LV_SYMBOL_POWER, "Main Amp Enabled", ampSettings->ampEnabled);
     lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onAmpButtonPowerClicked, LV_EVENT_VALUE_CHANGED, this);
     
     cont = lv_menu_cont_create(section);
-    
+    _mainAmpSelectorRow = cont;
+
     lv_obj_t *ampSelector = lv_dropdown_create(cont);
     lv_obj_set_flex_grow(ampSelector, 1);
     lv_obj_set_style_text_color(ampSelector, lv_color_make(224, 26, 79), LV_PART_INDICATOR);
@@ -120,7 +122,7 @@ void AmpTab::createLayout()
     _subModeInfo.param = subModePos;
     
     section = lv_menu_section_create(root_page);
-    lv_obj_set_size(section, lv_pct(100), lv_pct(55));
+    _wiringSection = section;
     create_text(section, LV_SYMBOL_SETTINGS, "Amp wiring type: ", LV_MENU_ITEM_BUILDER_VARIANT_1);
     
     
@@ -130,7 +132,8 @@ void AmpTab::createLayout()
     lv_style_set_border_width(&noFrame, 0);
     lv_obj_add_style(ampWiringSelector, &noFrame, 0);
     lv_obj_set_flex_flow(ampWiringSelector, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_size(ampWiringSelector, lv_pct(50), lv_pct(40));
+    lv_obj_set_size(ampWiringSelector, lv_pct(100), LV_SIZE_CONTENT);
+    lv_obj_remove_flag(ampWiringSelector, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_event_cb(ampWiringSelector, radioEventHandler, LV_EVENT_CLICKED, &_subModeInfo);
     radiobutton_create(ampWiringSelector, "PARALLEL");
     radiobutton_create(ampWiringSelector, "SERIES");
@@ -150,7 +153,10 @@ void AmpTab::createLayout()
     {
         lv_obj_add_flag(_blendSlider, LV_OBJ_FLAG_HIDDEN);
     }
-    
+
+    showSubAmpControls(ampSettings->subAmpEnabled);
+    showMainAmpControls(ampSettings->ampEnabled);
+
     section = lv_menu_section_create(root_page);
     
     float inputGain = ampSettings->inputGain;
@@ -182,9 +188,12 @@ void AmpTab::createLayout()
     lv_style_set_border_width(&noFrame, 0);
 
     lv_obj_t *knobRow = lv_obj_create(section);
+    _knobRow = knobRow;
     lv_obj_add_style(knobRow, &noFrame, 0);
     lv_obj_set_size(knobRow, LV_PCT(100), LV_SIZE_CONTENT);
     lv_obj_set_flex_flow(knobRow, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(knobRow, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_remove_flag(knobRow, LV_OBJ_FLAG_SCROLLABLE);
 
     auto bass = ampSettings->getBassValue();
     std::snprintf(buf, sizeof(buf), "%.1f", bass);
@@ -203,6 +212,8 @@ void AmpTab::createLayout()
     cont = create_knob(knobRow, "Treble", 0, 100, treble * 10, buf);
     lv_obj_set_user_data(lv_obj_get_child(cont, 0), &_trebleInfo);
     lv_obj_add_event_cb(lv_obj_get_child(cont, 0), onTonestackKnobMoved, LV_EVENT_VALUE_CHANGED, NULL);
+
+    showTonestackControls(ampSettings->tonestackEnabled);
 
     lv_menu_set_sidebar_page(menu, NULL);
     lv_menu_set_page(menu, root_page);
@@ -241,8 +252,18 @@ void AmpTab::handleAmpPower(lv_event_t *e)
     if (lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED)
     {
         lv_obj_t *obj = lv_event_get_target_obj(e);
-        _amp->enabled(lv_obj_has_state(obj, LV_STATE_CHECKED));
+        bool on = lv_obj_has_state(obj, LV_STATE_CHECKED);
+        _amp->enabled(on);
+        showMainAmpControls(on);
     }
+}
+
+void AmpTab::showMainAmpControls(bool show)
+{
+    if (show)
+        lv_obj_remove_flag(_mainAmpSelectorRow, LV_OBJ_FLAG_HIDDEN);
+    else
+        lv_obj_add_flag(_mainAmpSelectorRow, LV_OBJ_FLAG_HIDDEN);
 }
 
 void AmpTab::handleSubAmpPower(lv_event_t *e)
@@ -250,7 +271,23 @@ void AmpTab::handleSubAmpPower(lv_event_t *e)
     if (lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED)
     {
         lv_obj_t *obj = lv_event_get_target_obj(e);
-        _amp->subEnabled(lv_obj_has_state(obj, LV_STATE_CHECKED));
+        bool on = lv_obj_has_state(obj, LV_STATE_CHECKED);
+        _amp->subEnabled(on);
+        showSubAmpControls(on);
+    }
+}
+
+void AmpTab::showSubAmpControls(bool show)
+{
+    if (show)
+    {
+        lv_obj_remove_flag(_subAmpSelector, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_remove_flag(_wiringSection, LV_OBJ_FLAG_HIDDEN);
+    }
+    else
+    {
+        lv_obj_add_flag(_subAmpSelector, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(_wiringSection, LV_OBJ_FLAG_HIDDEN);
     }
 }
 
@@ -259,8 +296,18 @@ void AmpTab::handleTonestackPower(lv_event_t *e)
     if (lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED)
     {
         lv_obj_t *obj = lv_event_get_target_obj(e);
-        _amp->tonestackEnabled(lv_obj_has_state(obj, LV_STATE_CHECKED));
+        bool on = lv_obj_has_state(obj, LV_STATE_CHECKED);
+        _amp->tonestackEnabled(on);
+        showTonestackControls(on);
     }
+}
+
+void AmpTab::showTonestackControls(bool show)
+{
+    if (show)
+        lv_obj_remove_flag(_knobRow, LV_OBJ_FLAG_HIDDEN);
+    else
+        lv_obj_add_flag(_knobRow, LV_OBJ_FLAG_HIDDEN);
 }
 
 void AmpTab::changeAmpModel(const char *newModel)

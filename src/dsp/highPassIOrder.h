@@ -12,7 +12,8 @@ public:
 
 private:
   int _cutOffFreq = 100;
-  t_float _alpha = 0;
+  t_float _b0 = 1;
+  t_float _a1 = 0;
   t_float _lastX = 0;
   t_float _lastY = 0;
 };

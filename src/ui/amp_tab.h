@@ -39,8 +39,15 @@ public:
     void createLayout();
 
     lv_obj_t *_blendSlider;
-    
+    lv_obj_t *_subAmpSelector;
+    lv_obj_t *_wiringSection;
+    lv_obj_t *_mainAmpSelectorRow;
+    lv_obj_t *_knobRow;
+
 private:
+    void showSubAmpControls(bool show);
+    void showMainAmpControls(bool show);
+    void showTonestackControls(bool show);
     float getInputLevel();
     float getOutputLevel();
     lv_obj_t * levelMeter(lv_obj_t * parent, const char * title);

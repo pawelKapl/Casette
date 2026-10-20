@@ -90,14 +90,14 @@ void MiscTab::createLayout()
     }
     lv_menu_set_mode_root_back_button(menu, LV_MENU_ROOT_BACK_BUTTON_ENABLED);
     lv_obj_add_event_cb(menu, backEventHandler, LV_EVENT_CLICKED, menu);
-    lv_obj_set_size(menu, lv_display_get_horizontal_resolution(NULL) - 80, lv_display_get_vertical_resolution(NULL));
+    lv_obj_set_size(menu, lv_pct(100), lv_pct(100));
     lv_obj_center(menu);
     resize_back_button(menu);
 
     lv_obj_t * cont;
     lv_obj_t * section;
 
-    lv_obj_t *create_preset_sub_page = lv_menu_page_create(menu, NULL);
+    lv_obj_t *create_preset_sub_page = lv_menu_page_create(menu, "Create New Preset");
     lv_obj_set_style_pad_hor(create_preset_sub_page, lv_obj_get_style_pad_left(lv_menu_get_main_header(menu), 0), 0);
     
     lv_obj_t * oneline_label = lv_label_create(create_preset_sub_page);
@@ -118,7 +118,7 @@ void MiscTab::createLayout()
 
     lv_keyboard_set_textarea(kb, text_ta);
 
-    lv_obj_t *assign_fs_sub_page = lv_menu_page_create(menu, NULL);
+    lv_obj_t *assign_fs_sub_page = lv_menu_page_create(menu, "Assign Footswitches");
     lv_obj_set_style_pad_hor(assign_fs_sub_page, lv_obj_get_style_pad_left(lv_menu_get_main_header(menu), 0), 0);
     cont = create_text(assign_fs_sub_page, LV_SYMBOL_EDIT, "Assign left switch: ", LV_MENU_ITEM_BUILDER_VARIANT_1);
     leftFsSelector = lv_dropdown_create(cont);

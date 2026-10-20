@@ -55,13 +55,13 @@ inline void to_json(nlohmann::json& j, const ReverbSettings& d) {
 }
 
 inline void from_json(const nlohmann::json& j, ReverbSettings& d) {
-    j.at("reverbMode").get_to(d.reverbMode);
-    j.at("mix").get_to(d.mix);
-    j.at("damping").get_to(d.damping);
-    j.at("preDelay").get_to(d.preDelay);
-    j.at("roomSize").get_to(d.roomSize);
-    j.at("hiPass").get_to(d.hiPass);
-    j.at("loPass").get_to(d.loPass);
-    j.at("enabled").get_to(d.enabled);
-	d.decay = j.value("decay", 40);
+    d.reverbMode = j.value("reverbMode", d.reverbMode);
+    d.mix = j.value("mix", d.mix);
+    d.damping = j.value("damping", d.damping);
+    d.preDelay = j.value("preDelay", d.preDelay);
+    d.roomSize = j.value("roomSize", d.roomSize);
+    d.hiPass = j.value("hiPass", d.hiPass);
+    d.loPass = j.value("loPass", d.loPass);
+    d.enabled = j.value("enabled", d.enabled);
+	d.decay = j.value("decay", d.decay);
 }

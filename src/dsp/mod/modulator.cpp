@@ -9,23 +9,34 @@ Modulator::Modulator(int samplingFrequency, float maxDelayMs)
     _maxDelay = maxDelaySize;
     _delayBufferL.resize(maxDelaySize, 0.0f);
     _delayBufferR.resize(maxDelaySize, 0.0f);
+    updateBaseDelay(330);
+}
+
+void Modulator::updateBaseDelay(float depthSamples)
+{
+    float minBase = 2.0f * _samplingFrequency / 1000.0f;
+    float maxBase = (_maxDelay - 2) / 2.0f;
+    _baseDelay = std::clamp(depthSamples * LFO_PEAK + 1.0f, minBase, maxBase);
 }
 
 void Modulator::process(const t_float *const *input, t_float **output, int frames, int inChannels, int outChannels)
 {
     for (int i = 0; i < frames; i++)
     {
+        // input and output may alias, so read the dry sample before writing any output
+        const float in = input[0][i];
+
         _lfoL.tick();
         _lfoR.tick();
 
-        auto lOffset = _lfoL.getOffset() + (2.0f * _samplingFrequency / 1000.0f);
-        auto rOffset = _lfoR.getOffset() + (2.0f * _samplingFrequency / 1000.0f);
+        auto lOffset = _lfoL.getOffset() + _baseDelay;
+        auto rOffset = _lfoR.getOffset() + _baseDelay;
 
         float outL = readDelay(_delayBufferL, lOffset);
         float outR = readDelay(_delayBufferR, rOffset);
 
-        _delayBufferL[_writeIndex] = input[0][i] + _feedbackSampleL * _feedbackGain;
-        _delayBufferR[_writeIndex] = input[0][i] + _feedbackSampleR * _feedbackGain;
+        _delayBufferL[_writeIndex] = in + _feedbackSampleL * _feedbackGain;
+        _delayBufferR[_writeIndex] = in + _feedbackSampleR * _feedbackGain;
         _writeIndex = (_writeIndex + 1) % _maxDelay;
 
         if (_vibratoMode)
@@ -38,8 +49,8 @@ void Modulator::process(const t_float *const *input, t_float **output, int frame
             float dryGain = std::sqrt(1.0f - _modMix);
             float wetGain = std::sqrt(_modMix);
 
-            output[0][i] = dryGain * input[0][i] + wetGain * outL;
-            output[1][i] = dryGain * input[0][i] + wetGain * outR;
+            output[0][i] = dryGain * in + wetGain * outL;
+            output[1][i] = dryGain * in + wetGain * outR;
         }
 
         _feedbackSampleL = outL;

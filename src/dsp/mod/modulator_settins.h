@@ -47,11 +47,11 @@ inline void to_json(nlohmann::json& j, const ModulatorSettings& d) {
 }
 
 inline void from_json(const nlohmann::json& j, ModulatorSettings& d) {
-    j.at("mix").get_to(d.mix);
-    j.at("enabled").get_to(d.enabled);
-	j.at("depth").get_to(d.depth);
-	j.at("rate").get_to(d.rate);
-	j.at("width").get_to(d.width);
-	j.at("feedback").get_to(d.feedback);
-	j.at("vibrato").get_to(d.vibratoMode);
+    d.mix = j.value("mix", d.mix);
+    d.enabled = j.value("enabled", d.enabled);
+	d.depth = j.value("depth", d.depth);
+	d.rate = j.value("rate", d.rate);
+	d.width = j.value("width", d.width);
+	d.feedback = j.value("feedback", d.feedback);
+	d.vibratoMode = j.value("vibrato", d.vibratoMode);
 }

@@ -74,18 +74,18 @@ inline void to_json(nlohmann::json& j, const AmpSettings& a) {
 }
 
 inline void from_json(const nlohmann::json& j, AmpSettings& a) {
-    j.at("model").get_to(a.model);
-    a.subModel = j.value("subModel", "Bogner XTC Red Channel");
-    a.subBlend = j.value("subBlend", 0.0f);
-    a.subMode = j.value("subMode", "PARALLEL");
-    j.at("inputGain").get_to(a.inputGain);
-    j.at("masterVolumeGain").get_to(a.masterVolumeGain);
-    j.at("bass").get_to(a.bass);
-    j.at("middle").get_to(a.middle);
-    j.at("treble").get_to(a.treble);
-    j.at("tonestackEnabled").get_to(a.tonestackEnabled);
-    j.at("ampEnabled").get_to(a.ampEnabled);
-    a.subAmpEnabled = j.value("subAmpEnabled", false);
+    a.model = j.value("model", a.model);
+    a.subModel = j.value("subModel", a.subModel);
+    a.subBlend = j.value("subBlend", a.subBlend);
+    a.subMode = j.value("subMode", a.subMode);
+    a.inputGain = j.value("inputGain", a.inputGain);
+    a.masterVolumeGain = j.value("masterVolumeGain", a.masterVolumeGain);
+    a.bass = j.value("bass", a.bass);
+    a.middle = j.value("middle", a.middle);
+    a.treble = j.value("treble", a.treble);
+    a.tonestackEnabled = j.value("tonestackEnabled", a.tonestackEnabled);
+    a.ampEnabled = j.value("ampEnabled", a.ampEnabled);
+    a.subAmpEnabled = j.value("subAmpEnabled", a.subAmpEnabled);
 }
 
 class Amp

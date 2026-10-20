@@ -2,6 +2,7 @@
 
 #define _USE_MATH_DEFINES
 
+#include <algorithm>
 #include <array>
 #include <math.h>
 #include <cmath>
@@ -41,6 +42,12 @@ static inline t_float fast_sin(t_float x)
 static inline t_float fast_tanh(t_float x)
 {
   return x*(27+x*x)/(27+9*x*x);
+}
+
+static inline t_float onePoleK(t_float cutOff, t_float sampleRate)
+{
+  t_float fc = std::clamp(cutOff, (t_float)1.0, (t_float)(0.49 * sampleRate));
+  return std::tan(M_PI * fc / sampleRate);
 }
 
 static inline int msToSamples(float ms, float sampleRate) 

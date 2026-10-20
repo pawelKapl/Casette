@@ -438,10 +438,15 @@ void GUI::createTabMenu()
                                                                                cpuData);
 
     tab_count = lv_tabview_get_tab_count(_tabview);
+    lv_obj_t *tab_content = lv_tabview_get_content(_tabview);
     for (i = 0; i < tab_count; i++)
     {
         lv_obj_t *button = lv_obj_get_child(tab_buttons, i);
         lv_obj_set_style_border_side(button, LV_BORDER_SIDE_RIGHT, LV_PART_MAIN | LV_STATE_CHECKED);
+
+        lv_obj_t *tab = lv_obj_get_child(tab_content, i);
+        lv_obj_set_style_pad_all(tab, 0, 0);
+        lv_obj_remove_flag(tab, LV_OBJ_FLAG_SCROLLABLE);
     }
 
     lv_obj_remove_flag(lv_tabview_get_content(_tabview), LV_OBJ_FLAG_SCROLLABLE);

@@ -94,13 +94,14 @@ struct RoomReverb
   {
     lfo.tick();
 
+    buffer[writeHead] = in;
+
     t_float readHead = (t_float)writeHead - preDelayLength;
     readHead = fmod(readHead + PRE_DELAY_BUFFER_SIZE, PRE_DELAY_BUFFER_SIZE);
 
     t_float delayedSample = buffer[(int)readHead];
     buffer[(int)readHead] = 0;
 
-    buffer[writeHead] = in;
     writeHead = (writeHead + 1) % PRE_DELAY_BUFFER_SIZE;
 
     float combSum = 0.0f;

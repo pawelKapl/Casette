@@ -12,8 +12,17 @@ enum DelayMode
   MONO = 0,
   TAPE = 1,
   DUAL_TAP = 2,
-  PING_PONG = 3, 
-  CIRCULAR = 4
+  PING_PONG = 3,
+  CIRCULAR = 4,
+  REVERSE = 5
+};
+
+struct ReverseGrain
+{
+  int start = 0;
+  int pos = 0;
+  int length = 0;
+  bool active = false;
 };
 
 struct SingleDelay
@@ -55,8 +64,13 @@ public:
     _circularDelays[1].lfo = {0.6, _samplingFrequency, _modDepth, 0.1};
     _circularDelays[2].lfo = {0.7, _samplingFrequency, _modDepth, 0.1};
     _dualTapDelays[0].lfo = {0.5, _samplingFrequency, _modDepth, 0.1};
-    _dualTapDelays[0].lfo = {0.6, _samplingFrequency, _modDepth, 0.1};
+    _dualTapDelays[1].lfo = {0.6, _samplingFrequency, _modDepth, 0.1};
     _generalDelay[0].lfo = {0.5, _samplingFrequency, _modDepth, 0.1};
+  }
+
+  inline void setReverseWetOnly(bool wetOnly)
+  {
+    _reverseWetOnly = wetOnly;
   }
 
   inline void setMode(DelayMode mode)
@@ -88,6 +102,8 @@ public:
 
 private:
   void singleDelay(const t_float* const* input, t_float** output, DelayMode mode, int frames, int delayIndex, int panning, int inChannels, int outChannels);
+  void reverseDelay(const t_float* const* input, t_float** output, int frames, int inChannels, int outChannels);
+  void startGrain(ReverseGrain &grain);
   void recalculate();
   t_float* initSingleDelay(SingleDelay *_delay, t_float * ptr);
   void clearSingleDelay(SingleDelay *_delay);
@@ -101,10 +117,17 @@ private:
   t_float _baseTime = 0.292;
   t_float _baseTime2 = 0.592;
   bool _diffusion = false;
+  bool _reverseWetOnly = false;
 
   SingleDelay _circularDelays[3];
   SingleDelay _dualTapDelays[2];
   SingleDelay _generalDelay[1];
+  SingleDelay _reverseDelay;
+
+  // two grains offset by half a length, Hann windows sum to unity
+  ReverseGrain _grains[2];
+  int _reversePhase = 0;
+  int _reverseLength = 2;
 
   Diffuser _diffuserL;
   Diffuser _diffuserR;

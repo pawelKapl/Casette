@@ -48,8 +48,9 @@ void FxChain::reload()
 	_delay->setMode(DelayMode(_delaySettings.delayMode));
 	_delay->setHighPass(_delaySettings.hiPass);
 	_delay->setLowPass(_delaySettings.loPass);
-	_delay->setMod(_delaySettings.diffusion ? 1 : 0);
-	_delay->setDiffusion(float(_delaySettings.diffusion) / 100.);   
+	_delay->setMod(_delaySettings.modRate);
+	_delay->setDiffusion(float(_delaySettings.diffusion) / 100.);
+	_delay->setReverseWetOnly(_delaySettings.reverseWetOnly);
 
 	_reverb = std::make_unique<Reverb>(48000);
 	_reverb->init(memPtr);
@@ -58,6 +59,7 @@ void FxChain::reload()
 	_reverb->setHighPass(_reverbSettings.hiPass);
 	_reverb->setDamping(float(_reverbSettings.damping) / 100.);
 	_reverb->setLowPass(_reverbSettings.loPass);
+	_reverb->setPreDelay(float(_reverbSettings.preDelay) / 1000.);
 
 	_enabled = enabledCurrently;
 }
@@ -93,6 +95,9 @@ void FxChain::adjustDelayParam(int param, int newValue)
 			break;
 		case 8:
 			_delay->setMod(_delaySettings.modRate);
+			break;
+		case 10:
+			_delay->setReverseWetOnly(_delaySettings.reverseWetOnly);
 			break;
 	}
 

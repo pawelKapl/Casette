@@ -2,27 +2,19 @@
 
 HighPassIOrder::HighPassIOrder()
 {
-  setCutOff(250, 44100);
+  setCutOff(250, 48000);
 }
 
 void HighPassIOrder::filter(t_float* input, t_float* output, int frames)
 {
-  static t_float lastX = 0;
-  static t_float lastY = 0;
   for (int i = 0; i < frames; ++i)
-  {
-    t_float x = input[i];
-    t_float y = _alpha * (lastY + x - lastX);
-    lastX = x;
-    lastY = y;
-    output[i] = y;
-  }
+    filter(input[i], &output[i]);
 }
 
 void HighPassIOrder::filter(t_float input, t_float *output)
 {
   t_float x = input;
-  t_float y = _alpha * (_lastY + x - _lastX);
+  t_float y = _b0 * (x - _lastX) - _a1 * _lastY;
   _lastX = x;
   _lastY = y;
   *output = y;
@@ -31,7 +23,7 @@ void HighPassIOrder::filter(t_float input, t_float *output)
 void HighPassIOrder::setCutOff(int freq, int samplingFrequency)
 {
   _cutOffFreq = freq;
-  t_float RC = 1.0 / (2.0 * M_PI * _cutOffFreq);
-  t_float dt = 1.0 / samplingFrequency;
-  _alpha = RC / (RC + dt);
+  t_float K = onePoleK(_cutOffFreq, samplingFrequency);
+  _b0 = 1.0 / (1.0 + K);
+  _a1 = (K - 1.0) / (K + 1.0);
 }

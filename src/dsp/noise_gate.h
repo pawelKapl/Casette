@@ -29,13 +29,13 @@ inline void to_json(nlohmann::json& j, const NoiseGateParams& p)
 
 inline void from_json(const nlohmann::json& j, NoiseGateParams& p) 
 {
-    j.at("enabled").get_to(p.enabled);
-    j.at("sampleRate").get_to(p.sampleRate);
-    j.at("threshold").get_to(p.threshold);
-    j.at("compRatio").get_to(p.compRatio);
-    j.at("attack").get_to(p.attack);
-    j.at("release").get_to(p.release);
-    j.at("holdTime").get_to(p.holdTime);
+    p.enabled = j.value("enabled", p.enabled);
+    p.sampleRate = j.value("sampleRate", p.sampleRate);
+    p.threshold = j.value("threshold", p.threshold);
+    p.compRatio = j.value("compRatio", p.compRatio);
+    p.attack = j.value("attack", p.attack);
+    p.release = j.value("release", p.release);
+    p.holdTime = j.value("holdTime", p.holdTime);
 }
 
 class NoiseGate

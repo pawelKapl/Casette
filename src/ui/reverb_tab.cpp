@@ -19,14 +19,14 @@ void ReverbTab::createLayout()
     }
     lv_menu_set_mode_root_back_button(menu, LV_MENU_ROOT_BACK_BUTTON_ENABLED);
     lv_obj_add_event_cb(menu, backEventHandler, LV_EVENT_CLICKED, menu);
-    lv_obj_set_size(menu, lv_display_get_horizontal_resolution(NULL) - 80, lv_display_get_vertical_resolution(NULL));
+    lv_obj_set_size(menu, lv_pct(100), lv_pct(100));
     lv_obj_center(menu);
     resize_back_button(menu);
 
     lv_obj_t * cont;
     lv_obj_t * section;
 
-    lv_obj_t * sub_params_page = lv_menu_page_create(menu, NULL);
+    lv_obj_t * sub_params_page = lv_menu_page_create(menu, "Reverb Params");
     lv_obj_set_style_pad_hor(sub_params_page, lv_obj_get_style_pad_left(lv_menu_get_main_header(menu), 0), 0);
     lv_menu_separator_create(sub_params_page);
     section = lv_menu_section_create(sub_params_page);
@@ -57,7 +57,7 @@ void ReverbTab::createLayout()
     lv_obj_set_user_data(lv_obj_get_child(cont, 2), &_preDelayInfo);
     lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onReverbSliderMoved, LV_EVENT_VALUE_CHANGED, NULL);
 
-    lv_obj_t * sub_eq_page = lv_menu_page_create(menu, NULL);
+    lv_obj_t * sub_eq_page = lv_menu_page_create(menu, "Reverb Equalization");
     lv_obj_set_style_pad_hor(sub_eq_page, lv_obj_get_style_pad_left(lv_menu_get_main_header(menu), 0), 0);
     lv_menu_separator_create(sub_eq_page);
     section = lv_menu_section_create(sub_eq_page);
