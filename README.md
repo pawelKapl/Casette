@@ -93,6 +93,12 @@ dtoverlay=hifiberry-dacplusadcpro
 
 <img width="1080" height="1440" alt="image" src="https://github.com/user-attachments/assets/3e6c7ed3-0ccd-4241-b8e1-1a00b7ede5f6" />
 
+<img width="800" height="480" alt="image" src="https://github.com/user-attachments/assets/91f7ae26-9161-414d-ba61-ad4558d1d8a8" />
+
+<img width="800" height="480" alt="image" src="https://github.com/user-attachments/assets/ad3864ec-fc78-4d73-9d00-911c871cd25a" />
+
+
+
 ### Test video: 
 [![Watch the video](https://i.ytimg.com/vi/pGTkpytEGvQ/oar2.jpg?sqp=-oaymwEoCJUDENAFSFqQAgHyq4qpAxcIARUAAIhC2AEB4gEKCBgQAhgGOAFAAQ==&rs=AOn4CLDyASWbmikuPllF9DrZUUQPOz3kVA&usqp=CCk)](https://www.youtube.com/shorts/pGTkpytEGvQ)
 
