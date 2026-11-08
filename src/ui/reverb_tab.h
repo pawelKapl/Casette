@@ -34,6 +34,7 @@ private:
     lv_obj_t *_tab;
     FxChain *_fxChain;
 
+    ReverbControlInfo _modeInfo{_fxChain, 0};
     ReverbControlInfo _mixInfo{_fxChain, 1};
     ReverbControlInfo _roomSizeInfo{_fxChain, 2};
     ReverbControlInfo _dampingInfo{_fxChain, 3};

@@ -4,6 +4,11 @@
 static void backEventHandler(lv_event_t * e);
 static void onReverbButtonPowerClicked(lv_event_t * e);
 static void onReverbSliderMoved(lv_event_t * e);
+static void radioEventHandler(lv_event_t * e);
+
+// in ReverbMode order
+static const char *REVERB_TYPES[] = {"Room"};
+static_assert(sizeof(REVERB_TYPES) / sizeof(REVERB_TYPES[0]) == REVERB_MODE_COUNT);
 
 void ReverbTab::createLayout()
 {
@@ -25,6 +30,27 @@ void ReverbTab::createLayout()
 
     lv_obj_t * cont;
     lv_obj_t * section;
+
+    lv_obj_t * sub_type_page = lv_menu_page_create(menu, "Reverb Type");
+    lv_obj_set_style_pad_hor(sub_type_page, lv_obj_get_style_pad_left(lv_menu_get_main_header(menu), 0), 0);
+    lv_menu_separator_create(sub_type_page);
+    section = lv_menu_section_create(sub_type_page);
+    create_text(section, LV_SYMBOL_SETTINGS, "Reverb type: ", LV_MENU_ITEM_BUILDER_VARIANT_1);
+
+    lv_obj_t * reverbTypeSelector = lv_obj_create(section);
+    static lv_style_t noFrame;
+    lv_style_init(&noFrame);
+    lv_style_set_border_width(&noFrame, 0);
+    lv_obj_add_style(reverbTypeSelector, &noFrame, 0);
+    lv_obj_set_flex_flow(reverbTypeSelector, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_size(reverbTypeSelector, lv_pct(100), LV_SIZE_CONTENT);
+    lv_obj_remove_flag(reverbTypeSelector, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_add_event_cb(reverbTypeSelector, radioEventHandler, LV_EVENT_CLICKED, &_modeInfo);
+    for (const char *type : REVERB_TYPES)
+        radiobutton_create(reverbTypeSelector, type);
+    int reverbMode = std::clamp(reverbSettings->reverbMode, 0, REVERB_MODE_COUNT - 1);
+    lv_obj_add_state(lv_obj_get_child(reverbTypeSelector, reverbMode), LV_STATE_CHECKED);
+    _modeInfo.param = reverbMode;
 
     lv_obj_t * sub_params_page = lv_menu_page_create(menu, "Reverb Params");
     lv_obj_set_style_pad_hor(sub_params_page, lv_obj_get_style_pad_left(lv_menu_get_main_header(menu), 0), 0);
@@ -78,6 +104,8 @@ void ReverbTab::createLayout()
     section = lv_menu_section_create(root_page);
     cont = create_switch(section, LV_SYMBOL_POWER, "Enabled", reverbSettings->enabled);
     lv_obj_add_event_cb(lv_obj_get_child(cont, 2), onReverbButtonPowerClicked, LV_EVENT_VALUE_CHANGED, this);
+    cont = create_text(section, LV_SYMBOL_SETTINGS, "Type", LV_MENU_ITEM_BUILDER_VARIANT_1);
+    lv_menu_set_load_page_event(menu, cont, sub_type_page);
     cont = create_text(section, LV_SYMBOL_AUDIO, "Params", LV_MENU_ITEM_BUILDER_VARIANT_1);
     lv_menu_set_load_page_event(menu, cont, sub_params_page);
     cont = create_text(section, LV_SYMBOL_SETTINGS, "Equalization", LV_MENU_ITEM_BUILDER_VARIANT_1);
@@ -98,6 +126,22 @@ static void onReverbSliderMoved(lv_event_t *e)
     lv_obj_t *slider = lv_event_get_target_obj(e);
     ReverbControlInfo *data = static_cast<ReverbControlInfo*>(lv_obj_get_user_data(slider));
     data->chainRef->adjustReverbParam(data->param, lv_slider_get_value(slider)); 
+}
+
+static void radioEventHandler(lv_event_t * e)
+{
+    ReverbControlInfo * info = static_cast<ReverbControlInfo*>(lv_event_get_user_data(e));
+    lv_obj_t * cont = (lv_obj_t *)lv_event_get_current_target(e);
+    lv_obj_t * act_cb = lv_event_get_target_obj(e);
+    lv_obj_t * old_cb = lv_obj_get_child(cont, info->param);
+
+    if(act_cb == cont) return;
+
+    lv_obj_remove_state(old_cb, LV_STATE_CHECKED);
+    lv_obj_add_state(act_cb, LV_STATE_CHECKED);
+
+    info->param = lv_obj_get_index(act_cb);
+    info->chainRef->adjustReverbParam(0, info->param);
 }
 
 static void backEventHandler(lv_event_t * e)

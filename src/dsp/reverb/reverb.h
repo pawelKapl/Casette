@@ -1,17 +1,24 @@
 #pragma once
 
+#include <atomic>
 #include "dsp/dsp_math.h"
 #include "dsp/highPassIOrder.h"
 #include "dsp/lowPassIOrder.h"
 #include "dsp/diffuser.h"
 #include "dsp/comb_filter.h"
 #include "dsp/lfo.h"
+#include "dsp/smoothed_value.h"
 
 #define PRE_DELAY_BUFFER_SIZE 12000
+#define MODE_FADE_TIME 0.01f
+#define MIX_SMOOTHING_TIME 0.02f
+#define COMB_GLIDE_TIME 0.05f
 
-enum ReverbMode
+// stored in presets as an int - only append
+enum ReverbMode : int
 {
   ROOM = 0,
+  REVERB_MODE_COUNT
 };
 
 struct RoomReverb
@@ -37,10 +44,29 @@ struct RoomReverb
     setPreDelay(0.02f, samplingFrequency);
 
     for (int i = 0; i < 8; i++)
+    {
       combFilters.push_back({});
+      combFilters.back().setDelayGlide(COMB_GLIDE_TIME, samplingFrequency);
+    }
 
     setCombFilters(0.5f, 0.5f, samplingFrequency);
+    settle();
+    clear();
     return currentPtr;
+  }
+
+  void settle()
+  {
+    for (auto &comb : combFilters)
+      comb.settle();
+  }
+
+  void clear()
+  {
+    std::fill(buffer, buffer + PRE_DELAY_BUFFER_SIZE, 0.0f);
+    for (auto &comb : combFilters)
+      comb.clear();
+    diffuser.clear();
   }
 
   void setCombFilters(float roomSize, float decay, int samplingFrequency)
@@ -124,6 +150,8 @@ public:
   void process(const t_float *const *input, t_float **output, int frames, int inChannels, int outChannels);
   void setHighPass(int freq);
   void setLowPass(int freq);
+  void setMode(ReverbMode mode);
+  void settle();
 
   inline void setDamping(t_float damping)
   {
@@ -133,12 +161,8 @@ public:
 
   inline void setMix(t_float mix)
   {
-    _reverbMix = mix;
-  }
-
-  inline void setMode(ReverbMode mode)
-  {
-    _mode = mode;
+    _wetGain.setTarget(std::sqrt(mix));
+    _dryGain.setTarget(std::sqrt(1.0f - mix));
   }
 
   inline void setPreDelay(float preDelay)
@@ -154,13 +178,55 @@ public:
   }
 
 private:
+  template <typename Tank>
+  void processBlock(const t_float *const *input, t_float **output, int frames, int inChannels, int outChannels, t_float fadeTarget, Tank &&tank);
+  void clearMode(ReverbMode mode);
+
   int _samplingFrequency = 48000;
 
-  ReverbMode _mode = ROOM;
-  t_float _reverbMix = 0.36f;
+  // UI requests a mode, audio thread fades out, switches, fades in
+  std::atomic<ReverbMode> _requestedMode{ROOM};
+  std::atomic<ReverbMode> _activeMode{ROOM};
+  t_float _modeFade = 1.0f;
+  t_float _modeFadeStep = 1.0f;
+
+  SmoothedValue _wetGain;
+  SmoothedValue _dryGain;
 
   RoomReverb _roomReverb[2];
 
   HighPassIOrder _hiPassFilter[2];
   LowPassIOrder _lowPassFilter[2];
 };
+
+template <typename Tank>
+void Reverb::processBlock(const t_float *const *input, t_float **output, int frames, int inChannels, int outChannels, t_float fadeTarget, Tank &&tank)
+{
+  const t_float *inL = input[0];
+  const t_float *inR = inChannels > 1 ? input[1] : input[0];
+
+  for (int i = 0; i < frames; i++)
+  {
+    t_float dryL = inL[i];
+    t_float dryR = inR[i];
+    t_float sendL = dryL;
+    t_float sendR = dryR;
+
+    _hiPassFilter[0].filter(sendL, &sendL);
+    _lowPassFilter[0].filter(sendL, &sendL);
+    _hiPassFilter[1].filter(sendR, &sendR);
+    _lowPassFilter[1].filter(sendR, &sendR);
+
+    t_float wetL = 0;
+    t_float wetR = 0;
+    tank(sendL, sendR, wetL, wetR);
+
+    _modeFade += std::clamp(fadeTarget - _modeFade, -_modeFadeStep, _modeFadeStep);
+    t_float wetGain = _wetGain.next() * _modeFade;
+    t_float dryGain = _dryGain.next();
+
+    output[0][i] = dryL * dryGain + wetL * wetGain;
+    if (outChannels > 1)
+      output[1][i] = dryR * dryGain + wetR * wetGain;
+  }
+}

@@ -4,6 +4,12 @@ Reverb::Reverb(int samplingFrequency)
   : _samplingFrequency(samplingFrequency)
 {
   _roomReverb[0].right = true;
+
+  _modeFadeStep = 1.0f / (MODE_FADE_TIME * samplingFrequency);
+  _wetGain.setTime(MIX_SMOOTHING_TIME, samplingFrequency);
+  _dryGain.setTime(MIX_SMOOTHING_TIME, samplingFrequency);
+  setMix(0.36f);
+  settle();
 }
 
 t_float *Reverb::init(t_float *memory)
@@ -18,25 +24,69 @@ t_float *Reverb::init(t_float *memory)
 
 void Reverb::process(const t_float* const* input, t_float** output, int frames, int inChannels, int outChannels)
 {
-  for (int c = 0; c < outChannels; c++)
+  ReverbMode requested = _requestedMode.load(std::memory_order_acquire);
+  ReverbMode active = _activeMode.load(std::memory_order_relaxed);
+
+  // switch only once the old wet has faded out
+  if (requested != active && _modeFade <= 0.0f)
   {
-    for (int i = 0; i < frames; i++)
-    {
-      t_float drySample = input[c][i];
-      t_float sendSample = drySample;
+    active = requested;
+    _activeMode.store(active, std::memory_order_release);
+  }
 
-      _hiPassFilter[c].filter(sendSample, &sendSample);
-      _lowPassFilter[c].filter(sendSample, &sendSample);
+  t_float fadeTarget = (requested == active) ? 1.0f : 0.0f;
 
-      float wet = _roomReverb[c].process(sendSample);
+  switch (active)
+  {
+    case ROOM:
+      processBlock(input, output, frames, inChannels, outChannels, fadeTarget,
+                   [this](t_float inL, t_float inR, t_float &outL, t_float &outR)
+                   {
+                     outL = _roomReverb[0].process(inL);
+                     outR = _roomReverb[1].process(inR);
+                   });
+      break;
+    default:
+      break;
+  }
+}
 
-      float wetGain = std::sqrt(_reverbMix);
-      float dryGain = std::sqrt(1.0f - _reverbMix);
+void Reverb::setMode(ReverbMode mode)
+{
+  if (mode < 0 || mode >= REVERB_MODE_COUNT)
+    mode = ROOM;
 
-      output[c][i] =
-          drySample * dryGain +
-          wet * wetGain;
-    }  
+  if (mode == _requestedMode.load(std::memory_order_relaxed))
+    return;
+
+  // audio thread only touches the active and requested modes, so this one is safe to clear
+  if (mode != _activeMode.load(std::memory_order_acquire))
+    clearMode(mode);
+
+  _requestedMode.store(mode, std::memory_order_release);
+}
+
+// skips fades and glides - only while the audio thread isn't running this instance
+void Reverb::settle()
+{
+  _activeMode.store(_requestedMode.load());
+  _modeFade = 1.0f;
+  _wetGain.snap();
+  _dryGain.snap();
+  _roomReverb[0].settle();
+  _roomReverb[1].settle();
+}
+
+void Reverb::clearMode(ReverbMode mode)
+{
+  switch (mode)
+  {
+    case ROOM:
+      _roomReverb[0].clear();
+      _roomReverb[1].clear();
+      break;
+    default:
+      break;
   }
 }
 

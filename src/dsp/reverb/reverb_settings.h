@@ -1,5 +1,7 @@
 #pragma once
 
+#include "dsp/reverb/reverb.h"
+
 struct ReverbSettings
 {
 	int reverbMode = 0;
@@ -64,4 +66,17 @@ inline void from_json(const nlohmann::json& j, ReverbSettings& d) {
     d.loPass = j.value("loPass", d.loPass);
     d.enabled = j.value("enabled", d.enabled);
 	d.decay = j.value("decay", d.decay);
+}
+
+// for a freshly created reverb - shared by the fx chain and tools/reverb_render
+inline void applyReverbSettings(Reverb &reverb, const ReverbSettings &s)
+{
+	reverb.setMode(ReverbMode(s.reverbMode));
+	reverb.setMix(float(s.mix) / 100.);
+	reverb.setCombFilters(float(s.roomSize) / 100., float(s.decay) / 100.);
+	reverb.setHighPass(s.hiPass);
+	reverb.setDamping(float(s.damping) / 100.);
+	reverb.setLowPass(s.loPass);
+	reverb.setPreDelay(float(s.preDelay) / 1000.);
+	reverb.settle();
 }

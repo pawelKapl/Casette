@@ -38,6 +38,11 @@ public:
     _a = a;
   }
 
+  void clear()
+  {
+    std::fill(_buffer.begin(), _buffer.end(), 0.0f);
+  }
+
 private:
   int _index = 0;
   t_float _a;
@@ -62,6 +67,12 @@ public:
   {
     for (auto& filter : _filters)
       filter->setA(diffusion);
+  }
+
+  void clear()
+  {
+    for (auto& filter : _filters)
+      filter->clear();
   }
 
   inline void process(t_float input, t_float& output)
