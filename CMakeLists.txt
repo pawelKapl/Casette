@@ -18,6 +18,9 @@ set(FFTCONVOLVER_SOURCES
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${FFTCONVOLVER_SOURCES})
 
+# lets the octaver's per-band sqrt loops vectorize, errno is never read
+set_source_files_properties(${PROJECT_SOURCE_DIR}/src/dsp/octaver/octaver.cpp PROPERTIES COMPILE_OPTIONS "-fno-math-errno")
+
 add_subdirectory(deps/NeuralAudio)
 target_link_libraries(${PROJECT_NAME} PRIVATE NeuralAudio)
 

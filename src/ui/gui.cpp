@@ -423,6 +423,7 @@ void GUI::createTabMenu()
     lv_obj_set_style_bg_color(tab_buttons, lv_color_make(0, 0, 0), 0);
 
     _ampTab = std::make_unique<AmpTab>(_tabview, _amp);
+    _octaverTab = std::make_unique<OctaverTab>(_tabview, _preChain);
     _cabTab = std::make_unique<CabTab>(_tabview, _cabSimulator);
     _ngTab = std::make_unique<NGTab>(_tabview, _noiseGate);
     _modTab = std::make_unique<ModTab>(_tabview, _fxChain);
@@ -460,6 +461,7 @@ void GUI::reload()
     _amp->reload();
     _cabSimulator->reload();
     _fxChain->reload();
+    _preChain->reload();
     _noiseGate->reload();
     _mainScreen = lv_obj_create(NULL);
     lv_screen_load(_mainScreen);

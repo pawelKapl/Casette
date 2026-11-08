@@ -9,7 +9,9 @@
 #include "ui/mod_tab.h"
 #include "ui/reverb_tab.h"
 #include "ui/misc_tab.h"
+#include "ui/octaver_tab.h"
 #include "effects_chain.h"
+#include "pre_chain.h"
 #include "dsp/cab_simulator.h"
 #include "dsp/tuner.h"
 #include "dsp/amp.h"
@@ -18,8 +20,9 @@
 class GUI
 {
 public:
-    GUI(FxChain *fxChain, CabSimulator *cabSim, Amp *amp, NoiseGate *ng, Tuner *tuner, std::array<std::unique_ptr<GPIOButton>, 3> *footswitches, CpuMonitor* cpuMonitor)
+    GUI(FxChain *fxChain, PreChain *preChain, CabSimulator *cabSim, Amp *amp, NoiseGate *ng, Tuner *tuner, std::array<std::unique_ptr<GPIOButton>, 3> *footswitches, CpuMonitor* cpuMonitor)
         : _fxChain(fxChain),
+          _preChain(preChain),
           _cabSimulator(cabSim),
           _amp(amp),
           _noiseGate(ng),
@@ -46,6 +49,7 @@ private:
 
     std::unique_ptr<CabTab> _cabTab;
     std::unique_ptr<AmpTab> _ampTab;
+    std::unique_ptr<OctaverTab> _octaverTab;
     std::unique_ptr<NGTab> _ngTab;
     std::unique_ptr<ModTab> _modTab;
     std::unique_ptr<DelayTab> _delayTab;
@@ -54,6 +58,7 @@ private:
 
     CpuMonitor *_cpuMonitor;
     FxChain *_fxChain;
+    PreChain *_preChain;
     CabSimulator *_cabSimulator;
     Amp *_amp;
     NoiseGate *_noiseGate;

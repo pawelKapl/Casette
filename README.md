@@ -20,6 +20,7 @@
 - Delays: Mono, Tape, Dual Tap, Ping Pong, Circular, reverse (coming)
 - Reverbs: room, spring, hall (with freeze)
 - Modulator - with vibrato mode
+- Octaver: polyphonic (-2, -1, +1, +2 octaves, works with chords) and analog style
 - Cpu usage monitor
 - Tuner
 - Bypass

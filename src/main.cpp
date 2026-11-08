@@ -4,6 +4,7 @@
 #include "ui/gui.h"
 #include "platform/client.h"
 #include "effects_chain.h"
+#include "pre_chain.h"
 #include "dsp/cab_simulator.h"
 #include "dsp/noise_gate.h"
 #include "dsp/tuner.h"
@@ -39,9 +40,10 @@ CabSimulator cabSim;
 Amp amp{&cpuMonitor, &cabSim};
 NoiseGate noiseGate;
 FxChain fxChain;
+PreChain preChain;
 Tuner tuner{48000, 4096, 64};
 
-GUI gui(&fxChain, &cabSim, &amp, &noiseGate, &tuner, &footswitches, &cpuMonitor);
+GUI gui(&fxChain, &preChain, &cabSim, &amp, &noiseGate, &tuner, &footswitches, &cpuMonitor);
 
 void signalHandler(int signum)
 {
@@ -69,7 +71,15 @@ int audio_callback(j_int nframes, void *arg)
     }
     else
     {
-        amp.process(inL, outL, nframes);
+        const float *ampIn = inL;
+        float preOut[nframes];
+        if (preChain.isActive())
+        {
+            preChain.process(inL, preOut, nframes);
+            ampIn = preOut;
+        }
+
+        amp.process(ampIn, outL, nframes);
 
         if (noiseGate.isEnabled())
         {

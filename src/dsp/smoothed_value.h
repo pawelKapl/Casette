@@ -51,6 +51,11 @@ public:
     return _current;
   }
 
+  inline t_float target() const
+  {
+    return _target;
+  }
+
 private:
   t_float _current = 0.0f;
   t_float _target = 0.0f;
