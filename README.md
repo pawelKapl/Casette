@@ -18,7 +18,7 @@
 - IR loader for cab simulation
 - Noise Gate
 - Delays: Mono, Tape, Dual Tap, Ping Pong, Circular, reverse (coming)
-- Reverbs: room
+- Reverbs: room, spring, hall (with freeze)
 - Modulator - with vibrato mode
 - Cpu usage monitor
 - Tuner

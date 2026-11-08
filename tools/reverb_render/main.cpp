@@ -6,6 +6,10 @@
 #include <string>
 #include <vector>
 
+#if defined(__x86_64__) || defined(__i386__)
+#include <xmmintrin.h>
+#endif
+
 #include "json.hpp"
 #include "dsp/reverb/reverb_settings.h"
 
@@ -14,12 +18,20 @@ static const char *USAGE =
     "  key=value  any reverb.json field (reverbMode, mix, decay, roomSize, damping,\n"
     "             preDelay, hiPass, loPass), same units as the UI stores\n"
     "  preset=    stored preset to start from, e.g. preset=storage/default/reverb.json\n"
-    "  tail=      seconds of silence appended so the tail can ring out (default 6)\n";
+    "  tail=      seconds of silence appended so the tail can ring out (default 6)\n"
+    "  at=        change a value mid-render like the UI does, e.g. at=2.5:reverbMode=0\n";
 
 // same size as DELAY_MEMORY, which the reverb shares with the delay on the pedal
 static const size_t MEMORY_SIZE = 4194304;
 // JACK period on the pedal
 static const int BLOCK_SIZE = 64;
+
+struct Change
+{
+  size_t frame;
+  std::string key;
+  int value;
+};
 
 struct Audio
 {
@@ -146,6 +158,19 @@ static bool writeWav(const std::string &path, const Audio &audio)
   return (bool)file;
 }
 
+static bool setValue(ReverbSettings &settings, const std::string &key, int value)
+{
+  nlohmann::json j = settings;
+  if (!j.contains(key))
+  {
+    std::fprintf(stderr, "unknown key: %s\n", key.c_str());
+    return false;
+  }
+  j[key] = value;
+  settings = j.get<ReverbSettings>();
+  return true;
+}
+
 static int run(int argc, char **argv)
 {
   if (argc < 3)
@@ -170,6 +195,7 @@ static int run(int argc, char **argv)
   }
 
   ReverbSettings settings;
+  std::vector<Change> changes;
   float tail = 6.0f;
   for (int i = 3; i < argc; i++)
   {
@@ -199,16 +225,24 @@ static int run(int argc, char **argv)
     {
       tail = std::stof(value);
     }
-    else
+    else if (key == "at")
     {
-      nlohmann::json j = settings;
-      if (!j.contains(key))
+      size_t colon = value.find(':');
+      size_t valueEq = value.find('=');
+      if (colon == std::string::npos || valueEq == std::string::npos || valueEq < colon)
       {
-        std::fprintf(stderr, "unknown key: %s\n", key.c_str());
+        std::fputs(USAGE, stderr);
         return 1;
       }
-      j[key] = std::stoi(value);
-      settings = j.get<ReverbSettings>();
+      std::string changeKey = value.substr(colon + 1, valueEq - colon - 1);
+      ReverbSettings probe;
+      if (!setValue(probe, changeKey, 0))
+        return 1;
+      changes.push_back({size_t(std::stof(value.substr(0, colon)) * audio.sampleRate), changeKey, std::stoi(value.substr(valueEq + 1))});
+    }
+    else if (!setValue(settings, key, std::stoi(value)))
+    {
+      return 1;
     }
   }
 
@@ -226,9 +260,25 @@ static int run(int argc, char **argv)
   }
   applyReverbSettings(reverb, settings);
 
+#if defined(__x86_64__) || defined(__i386__)
+  // denormals in decaying tails are very slow on x86, the pi build measures without this
+  _mm_setcsr(_mm_getcsr() | 0x8040);
+#endif
+
   auto start = std::chrono::steady_clock::now();
   for (size_t pos = 0; pos < total; pos += BLOCK_SIZE)
   {
+    for (const Change &change : changes)
+    {
+      if (change.frame < pos || change.frame >= pos + BLOCK_SIZE)
+        continue;
+      ReverbSettings before = settings;
+      setValue(settings, change.key, change.value);
+      for (int param = 0; param < ReverbSettings::paramCount; param++)
+        if (*before.getParam(param) != *settings.getParam(param))
+          applyReverbParam(reverb, settings, param);
+    }
+
     int frames = (int)std::min<size_t>(BLOCK_SIZE, total - pos);
     float *channels[2] = {audio.left.data() + pos, audio.right.data() + pos};
     reverb.process(channels, channels, frames, 2, 2);

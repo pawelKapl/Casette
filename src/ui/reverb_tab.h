@@ -28,11 +28,16 @@ public:
     }
 
     void handleReverbPower(lv_event_t *e);
+    void handleTypeSelected(lv_event_t *e);
     void createLayout();
 
 private:
+    void showCharacter(int mode);
+
     lv_obj_t *_tab;
     FxChain *_fxChain;
+    lv_obj_t *_characterSections[REVERB_MODE_COUNT] = {};
+    lv_obj_t *_freezeSwitch = nullptr;
 
     ReverbControlInfo _modeInfo{_fxChain, 0};
     ReverbControlInfo _mixInfo{_fxChain, 1};
@@ -42,4 +47,10 @@ private:
     ReverbControlInfo _hiPassInfo{_fxChain, 5};
     ReverbControlInfo _loPassInfo{_fxChain, 6};
     ReverbControlInfo _decayInfo{_fxChain, 8};
+    ReverbControlInfo _dwellInfo{_fxChain, 9};
+    ReverbControlInfo _tensionInfo{_fxChain, 10};
+    ReverbControlInfo _springsInfo{_fxChain, 11};
+    ReverbControlInfo _modDepthInfo{_fxChain, 12};
+    ReverbControlInfo _modRateInfo{_fxChain, 13};
+    ReverbControlInfo _freezeInfo{_fxChain, 14};
 };

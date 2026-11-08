@@ -32,6 +32,39 @@ static void update_slider_value_percent(lv_event_t * e)
     lv_obj_align_to(label, parent, LV_ALIGN_CENTER, 0, 0);
 }
 
+static void update_slider_value_plain(lv_event_t * e)
+{
+    lv_obj_t * slider = lv_event_get_target_obj(e);
+    lv_obj_t * parent = lv_obj_get_parent(slider);
+    lv_obj_t * label = lv_obj_get_child(parent, 3);
+    char buf[8];
+    lv_snprintf(buf, sizeof(buf), "%d", (int)lv_slider_get_value(slider));
+    lv_label_set_text(label, buf);
+    lv_obj_align_to(label, parent, LV_ALIGN_CENTER, 0, 0);
+}
+
+static void update_slider_value_tenth_ms(lv_event_t * e)
+{
+    lv_obj_t * slider = lv_event_get_target_obj(e);
+    lv_obj_t * parent = lv_obj_get_parent(slider);
+    lv_obj_t * label = lv_obj_get_child(parent, 3);
+    char buf[8];
+    lv_snprintf(buf, sizeof(buf), "%.1fms", (int)lv_slider_get_value(slider) / 10.);
+    lv_label_set_text(label, buf);
+    lv_obj_align_to(label, parent, LV_ALIGN_CENTER, 0, 0);
+}
+
+static void update_slider_value_mhz_as_hz(lv_event_t * e)
+{
+    lv_obj_t * slider = lv_event_get_target_obj(e);
+    lv_obj_t * parent = lv_obj_get_parent(slider);
+    lv_obj_t * label = lv_obj_get_child(parent, 3);
+    char buf[8];
+    lv_snprintf(buf, sizeof(buf), "%.2fHz", (int)lv_slider_get_value(slider) / 1000.);
+    lv_label_set_text(label, buf);
+    lv_obj_align_to(label, parent, LV_ALIGN_CENTER, 0, 0);
+}
+
 static void update_slider_value_ms(lv_event_t * e)
 {
     lv_obj_t * slider = lv_event_get_target_obj(e);

@@ -8,16 +8,21 @@
 #include "dsp/comb_filter.h"
 #include "dsp/lfo.h"
 #include "dsp/smoothed_value.h"
+#include "dsp/reverb/spring_reverb.h"
+#include "dsp/reverb/hall_reverb.h"
 
-#define PRE_DELAY_BUFFER_SIZE 12000
+#define PRE_DELAY_BUFFER_SIZE 24000
 #define MODE_FADE_TIME 0.01f
 #define MIX_SMOOTHING_TIME 0.02f
 #define COMB_GLIDE_TIME 0.05f
+#define REVERB_BLOCK 64
 
 // stored in presets as an int - only append
 enum ReverbMode : int
 {
   ROOM = 0,
+  SPRING = 1,
+  HALL = 2,
   REVERB_MODE_COUNT
 };
 
@@ -107,7 +112,7 @@ struct RoomReverb
 
   void setPreDelay(float delay, int samplingFrequency)
   {
-    preDelayLength = delay * samplingFrequency;
+    preDelayLength = std::clamp(int(delay * samplingFrequency), 0, PRE_DELAY_BUFFER_SIZE - 1);
   }
 
   void setDamping(float damp)
@@ -157,6 +162,8 @@ public:
   {
     _roomReverb[0].setDamping(damping);
     _roomReverb[1].setDamping(damping);
+    _spring.setDamping(damping);
+    _hall.setDamping(damping);
   }
 
   inline void setMix(t_float mix)
@@ -169,12 +176,46 @@ public:
   {
     _roomReverb[0].setPreDelay(preDelay, _samplingFrequency);
     _roomReverb[1].setPreDelay(preDelay, _samplingFrequency);
+    _spring.setPreDelay(preDelay);
+    _hall.setPreDelay(preDelay);
   }
 
-  inline void setCombFilters(float roomSize, float decay)
+  inline void setSizeDecay(float size, float decay)
   {
-    _roomReverb[0].setCombFilters(roomSize, decay, _samplingFrequency);
-    _roomReverb[1].setCombFilters(roomSize, decay, _samplingFrequency);
+    _roomReverb[0].setCombFilters(size, decay, _samplingFrequency);
+    _roomReverb[1].setCombFilters(size, decay, _samplingFrequency);
+    _spring.setSizeDecay(size, decay);
+    _hall.setSizeDecay(size, decay);
+  }
+
+  inline void setDwell(float dwell)
+  {
+    _spring.setDwell(dwell);
+  }
+
+  inline void setTension(float tension)
+  {
+    _spring.setTension(tension);
+  }
+
+  inline void setSprings(int count)
+  {
+    _spring.setCount(count);
+  }
+
+  inline void setModDepth(float depth)
+  {
+    _hall.setModDepth(depth);
+  }
+
+  inline void setModRate(float rate)
+  {
+    _hall.setModRate(rate);
+  }
+
+  inline void setFreeze(bool on)
+  {
+    _hall.setFreeze(on);
   }
 
 private:
@@ -194,6 +235,8 @@ private:
   SmoothedValue _dryGain;
 
   RoomReverb _roomReverb[2];
+  SpringReverb _spring;
+  HallReverb _hall;
 
   HighPassIOrder _hiPassFilter[2];
   LowPassIOrder _lowPassFilter[2];
@@ -205,28 +248,38 @@ void Reverb::processBlock(const t_float *const *input, t_float **output, int fra
   const t_float *inL = input[0];
   const t_float *inR = inChannels > 1 ? input[1] : input[0];
 
-  for (int i = 0; i < frames; i++)
+  for (int start = 0; start < frames; start += REVERB_BLOCK)
   {
-    t_float dryL = inL[i];
-    t_float dryR = inR[i];
-    t_float sendL = dryL;
-    t_float sendR = dryR;
+    int count = std::min(REVERB_BLOCK, frames - start);
+    t_float sendL[REVERB_BLOCK];
+    t_float sendR[REVERB_BLOCK];
+    t_float wetL[REVERB_BLOCK];
+    t_float wetR[REVERB_BLOCK];
 
-    _hiPassFilter[0].filter(sendL, &sendL);
-    _lowPassFilter[0].filter(sendL, &sendL);
-    _hiPassFilter[1].filter(sendR, &sendR);
-    _lowPassFilter[1].filter(sendR, &sendR);
+    for (int i = 0; i < count; i++)
+    {
+      sendL[i] = inL[start + i];
+      sendR[i] = inR[start + i];
+      _hiPassFilter[0].filter(sendL[i], &sendL[i]);
+      _lowPassFilter[0].filter(sendL[i], &sendL[i]);
+      _hiPassFilter[1].filter(sendR[i], &sendR[i]);
+      _lowPassFilter[1].filter(sendR[i], &sendR[i]);
+    }
 
-    t_float wetL = 0;
-    t_float wetR = 0;
-    tank(sendL, sendR, wetL, wetR);
+    tank(sendL, sendR, wetL, wetR, count);
 
-    _modeFade += std::clamp(fadeTarget - _modeFade, -_modeFadeStep, _modeFadeStep);
-    t_float wetGain = _wetGain.next() * _modeFade;
-    t_float dryGain = _dryGain.next();
+    for (int i = 0; i < count; i++)
+    {
+      t_float dryL = inL[start + i];
+      t_float dryR = inR[start + i];
 
-    output[0][i] = dryL * dryGain + wetL * wetGain;
-    if (outChannels > 1)
-      output[1][i] = dryR * dryGain + wetR * wetGain;
+      _modeFade += std::clamp(fadeTarget - _modeFade, -_modeFadeStep, _modeFadeStep);
+      t_float wetGain = _wetGain.next() * _modeFade;
+      t_float dryGain = _dryGain.next();
+
+      output[0][start + i] = dryL * dryGain + wetL[i] * wetGain;
+      if (outChannels > 1)
+        output[1][start + i] = dryR * dryGain + wetR[i] * wetGain;
+    }
   }
 }

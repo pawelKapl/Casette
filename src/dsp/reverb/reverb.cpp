@@ -18,6 +18,8 @@ t_float *Reverb::init(t_float *memory)
 
   currentPtr = _roomReverb[0].init(currentPtr, _samplingFrequency);
   currentPtr = _roomReverb[1].init(currentPtr, _samplingFrequency);
+  currentPtr = _spring.init(currentPtr, _samplingFrequency);
+  currentPtr = _hall.init(currentPtr, _samplingFrequency);
 
   return currentPtr;
 }
@@ -27,23 +29,45 @@ void Reverb::process(const t_float* const* input, t_float** output, int frames, 
   ReverbMode requested = _requestedMode.load(std::memory_order_acquire);
   ReverbMode active = _activeMode.load(std::memory_order_relaxed);
 
+  bool restructure = requested != active || (active == SPRING && _spring.countChangePending());
+
   // switch only once the old wet has faded out
-  if (requested != active && _modeFade <= 0.0f)
+  if (restructure && _modeFade <= 0.0f)
   {
     active = requested;
     _activeMode.store(active, std::memory_order_release);
+    if (active == SPRING)
+      _spring.applyCount();
+    restructure = false;
   }
 
-  t_float fadeTarget = (requested == active) ? 1.0f : 0.0f;
+  t_float fadeTarget = restructure ? 0.0f : 1.0f;
 
   switch (active)
   {
     case ROOM:
       processBlock(input, output, frames, inChannels, outChannels, fadeTarget,
-                   [this](t_float inL, t_float inR, t_float &outL, t_float &outR)
+                   [this](const t_float *inL, const t_float *inR, t_float *outL, t_float *outR, int count)
                    {
-                     outL = _roomReverb[0].process(inL);
-                     outR = _roomReverb[1].process(inR);
+                     for (int i = 0; i < count; i++)
+                     {
+                       outL[i] = _roomReverb[0].process(inL[i]);
+                       outR[i] = _roomReverb[1].process(inR[i]);
+                     }
+                   });
+      break;
+    case SPRING:
+      processBlock(input, output, frames, inChannels, outChannels, fadeTarget,
+                   [this](const t_float *inL, const t_float *inR, t_float *outL, t_float *outR, int count)
+                   {
+                     _spring.process(inL, inR, outL, outR, count);
+                   });
+      break;
+    case HALL:
+      processBlock(input, output, frames, inChannels, outChannels, fadeTarget,
+                   [this](const t_float *inL, const t_float *inR, t_float *outL, t_float *outR, int count)
+                   {
+                     _hall.process(inL, inR, outL, outR, count);
                    });
       break;
     default:
@@ -75,6 +99,8 @@ void Reverb::settle()
   _dryGain.snap();
   _roomReverb[0].settle();
   _roomReverb[1].settle();
+  _spring.settle();
+  _hall.settle();
 }
 
 void Reverb::clearMode(ReverbMode mode)
@@ -84,6 +110,12 @@ void Reverb::clearMode(ReverbMode mode)
     case ROOM:
       _roomReverb[0].clear();
       _roomReverb[1].clear();
+      break;
+    case SPRING:
+      _spring.clear();
+      break;
+    case HALL:
+      _hall.clear();
       break;
     default:
       break;

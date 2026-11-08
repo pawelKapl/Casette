@@ -18,6 +18,8 @@ void FxChain::reload()
     if (persistedReverbSettings.has_value())
     {
         _reverbSettings = *persistedReverbSettings;
+        // performance toggle, a preset never loads frozen
+        _reverbSettings.freeze = false;
     }
 
 	auto persistedModSettings = Storage::get().read<ModulatorSettings>("mod");
@@ -102,35 +104,7 @@ void FxChain::adjustDelayParam(int param, int newValue)
 void FxChain::adjustReverbParam(int param, int newValue)
 {
 	*_reverbSettings.getParam(param) = newValue;
-
-	switch (param)
-	{	
-		case 0:
-			_reverb->setMode(ReverbMode(_reverbSettings.reverbMode));
-			break;
-		case 1:
-			_reverb->setMix(float(_reverbSettings.mix) / 100.);
-			break;
-		case 2:
-			_reverb->setCombFilters(float(_reverbSettings.roomSize) / 100., float(_reverbSettings.decay) / 100.);
-			break;
-		case 3:
-			_reverb->setDamping(float(_reverbSettings.damping) / 100.);
-			break;
-		case 4:
-			_reverb->setPreDelay(float(_reverbSettings.preDelay) / 1000.);
-			break;
-		case 5:
-			_reverb->setHighPass(_reverbSettings.hiPass);
-			break;
-		case 6:
-			_reverb->setLowPass(_reverbSettings.loPass);
-			break;
-		case 8:
-			_reverb->setCombFilters(float(_reverbSettings.roomSize) / 100., float(_reverbSettings.decay) / 100.);
-			break;
-	}
-
+	applyReverbParam(*_reverb, _reverbSettings, param);
 	Storage::get().persist<ReverbSettings>(_reverbSettings, "reverb");
 }
 
